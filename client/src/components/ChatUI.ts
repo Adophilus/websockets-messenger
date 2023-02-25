@@ -1,4 +1,5 @@
-import Message from "../utils/Message"
+import _ from 'lodash'
+import Message from '../utils/Message'
 
 interface ISendMessageEvent {
   message: string
@@ -45,13 +46,14 @@ class ChatUIElement extends HTMLElement {
 
       const message = messageInput.value
       this._sendMessage(message)
+      messageInput.value = ''
     })
   }
 
   public addMessage(message: Message) {
     const messageElement = document.createElement('div')
     messageElement.innerHTML = `
-    <p>${message.message}</p>
+    <p>${_.escape(message.message)}</p>
     <div>
       <small>${message.has_read}</small>
     </div>
@@ -59,6 +61,13 @@ class ChatUIElement extends HTMLElement {
     this._messagesWrapper.appendChild(messageElement)
   }
 
+  public notifyUserJoined(username: string) {
+    const notificationElement = document.createElement('div')
+    notificationElement.innerHTML = `
+    <p><strong>${_.escape(username)}</strong> has joined the room</p>
+    `
+    this._messagesWrapper.appendChild(notificationElement)
+  }
   private _sendMessage(message: string) {
     this.dispatchEvent(
       new CustomEvent('send-message', {
