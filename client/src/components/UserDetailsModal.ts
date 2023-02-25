@@ -9,11 +9,6 @@ declare global {
 }
 
 class UserDetailsModalElement extends HTMLElement {
-  private declare _form: HTMLFormElement
-  private declare _fields: {
-    username: HTMLInputElement
-  }
-
   private _template = `
     <div class="w-screen h-screen absolute flex justify-center items-center">
       <form id="registrationForm" class="lg:w-2/6 md:w-1/2 mx-auto bg-gray-100 rounded-lg p-8 flex flex-col shadow-lg">
@@ -32,18 +27,18 @@ class UserDetailsModalElement extends HTMLElement {
 
   connectedCallback() {
     this.innerHTML = this._template
-    this._form = this.querySelector('#registrationForm') as HTMLFormElement
-    this._fields = {
+    const form = this.querySelector('#registrationForm') as HTMLFormElement
+    const fields = {
       username: this.querySelector('#username') as HTMLInputElement
     }
 
-    this._form.addEventListener('submit', (ev) => {
+    form.addEventListener('submit', (ev) => {
       ev.preventDefault()
 
-      const username = this._fields.username.value
+      const username = fields.username.value
 
       this._registerUsername(username)
-      this._fields.username.value = ''
+      fields.username.value = ''
     })
   }
 

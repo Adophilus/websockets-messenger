@@ -1,32 +1,42 @@
+import Message from '../utils/Message'
+import ChatUIElement from './ChatUI'
 import './UserDetailsModal'
+import UserDetailsModalElement from './UserDetailsModal'
 
 class AppElement extends HTMLElement {
-  // declare private _ws: WebSocket
+  private declare _ws: WebSocket
   private declare _username: string
-  private declare _registrationModalElement: HTMLElement
-  private declare _chatUIElement: HTMLElement
+  private declare _registrationModalElement: UserDetailsModalElement
+  private declare _chatUIElement: ChatUIElement
 
   constructor() {
     super()
-    // this._ws = new WebSocket(import.meta.env.VITE_WEBSOCKET_URI)
   }
 
   connectedCallback() {
-    this._registrationModalElement = document.createElement(
-      'ws-user-details-modal'
-    )
-    this._chatUIElement = document.createElement('ws-chat-ui')
+    this._ws = new WebSocket(import.meta.env.VITE_WEBSOCKET_URI)
+    this._ws.addEventListener('open', () => {
+      console.log('connected to server')
+    })
+    this._ws.addEventListener('message', ({ data }) => {
+      console.log(data)
+      this._chatUIElement.addMessage(new Message(data))
+    })
+
+    this._registrationModalElement = new UserDetailsModalElement()
+    this._chatUIElement = new ChatUIElement()
 
     this.appendChild(this._registrationModalElement)
 
-    this.querySelector('ws-user-details-modal')?.addEventListener(
-      'register',
-      (e) => {
-        this._username = e.detail.username
-        this._hideRegistrationModal()
-        this._showChatUI()
-      }
-    )
+    this._registrationModalElement.addEventListener('register', (ev) => {
+      this._username = ev.detail.username
+      this._hideRegistrationModal()
+      this._showChatUI()
+    })
+
+    this._chatUIElement.addEventListener('send-message', (ev) => {
+      this._ws.send(ev.detail.message)
+    })
   }
 
   private _hideRegistrationModal() {
