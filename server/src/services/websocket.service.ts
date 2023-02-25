@@ -10,12 +10,19 @@ interface IMessage {
   has_read: boolean
 }
 
-const users: { [k: string]: string } = {}
+interface IUserDetails {
+  sid: string
+  username: string
+}
 
-const getUsernameBySid = (sid: string) => {
-  for (const [k, v] of Object.entries(users)) {
-    if (v === sid) return k
-  }
+const users: IUserDetails[] = []
+
+const getUserBySid = (sid: string) => {
+  return users.find((user) => user.sid === sid)
+}
+
+const getUserByUsername = (username: string) => {
+  return users.find((user) => user.username === username)
 }
 
 export default (server: http.Server) => {
@@ -29,40 +36,55 @@ export default (server: http.Server) => {
   const logger = new Logger()
 
   io.on('connection', (socket) => {
-    let userDetails = {
-      username: ''
-    }
+    let userDetails: IUserDetails
 
     logger.info(`New connection from ${socket.id}`)
 
     socket.on('chat-register', ({ username }: { username: string }) => {
-      if (users.username != null) return false
+      if (getUserByUsername(username)) return false
 
-      const chain = io
-      Object.values(users).forEach((sid) => chain.to(sid))
-      chain.emit('user-joined', { username })
+      users.forEach((user) => {
+        logger.info(user)
+        io.to(user.sid).emit('user-joined', { username })
+        io.to(socket.id).emit('existing-user', { username: user.username })
+      })
 
       logger.info(`${socket.id} registered as ${username}`)
-      users[username] = socket.id
-      userDetails.username = username
+      userDetails = { username, sid: socket.id }
+      users.push(userDetails)
     })
 
-    socket.on('chat-message', ({ recepient, message }: { recepient: string, message: string }) => {
-      logger.info(
-        `Received new messge from ${socket.id}:${userDetails.username} -> ${recepient}: '${message}'`
-      )
+    socket.on(
+      'chat-message',
+      ({ recepient, message }: { recepient: string; message: string }) => {
+        const receiver = getUserByUsername(recepient)
+        const sender = getUserBySid(socket.id)!
 
-      if (!users[recepient]) return false
+        if (!receiver) return false
 
-      const chain = io
-      Object.values(users).forEach((sid) => socket.id !== sid ? chain.to(sid) : null)
-      chain.emit('user-joined', { recepient, message, sender: getUsernameBySid(socket.id), has_read: false, image: '' })
-    })
+        logger.info(
+          `Received new messge from ${sender.sid}:${userDetails.username} -> ${receiver.sid}:${receiver.username}: '${message}'`
+        )
+
+        io.to(receiver.sid).emit('chat-message', {
+          recepient: receiver.username,
+          message,
+          sender: sender.username,
+          has_read: false,
+          image: ''
+        })
+      }
+    )
 
     socket.on('disconnect', () => {
-      logger.info(`${socket.id} has disconnected`)
-      Object.entries(users).forEach(([k, v]) => {
-        if (v === socket.id) delete users[k]
+      const sender = getUserBySid(socket.id)
+      if (!sender) return false
+
+      logger.info(`${sender.sid}:${sender.username} has disconnected`)
+
+      users.forEach((user, index) => {
+        if (user.sid === socket.id) users.splice(index, 1)
+        else io.to(user.sid).emit('user-left', { username: sender.username })
       })
     })
   })
