@@ -3,8 +3,7 @@ import ChatUIElement from './ChatUI'
 import LobbyUIElement from './LobbyUI'
 import './UserDetailsModal'
 import UserDetailsModalElement from './UserDetailsModal'
-import { io } from 'socket.io-client'
-import { Socket } from 'socket.io'
+import { io, Socket } from 'socket.io-client'
 
 class AppElement extends HTMLElement {
   private declare _ws: Socket
@@ -19,7 +18,7 @@ class AppElement extends HTMLElement {
   }
 
   connectedCallback() {
-    this._ws = io(import.meta.env.VITE_WEBSOCKET_URI, { path: '/chat' })
+    this._ws = io('/', { path: '/chat' })
 
     this._ws.on('open', () => {
       console.log('connected to server')
