@@ -13,14 +13,18 @@ declare global {
 class ChatUIElement extends HTMLElement {
   private declare _messagesWrapper: HTMLElement
   _template = `
-  <section>
-    <div id="messagesWrapper"></div>
-  </section>
-  <section>
-    <form id="messageForm">
-      <input type="text" id="message" />
-      <input type="submit" value="Send" />
-    </form>
+  <section class="w-full mx-auto md:mt-12 md:w-1/2 lg:w-4/6 p-2 md:p-4 lg:px-8 shadow-lg">
+    <section>
+      <div id="messagesWrapper"></div>
+    </section>
+    <section>
+      <form id="messageForm">
+        <div class="flex">
+          <input type="text" id="message" name="message" class="w-full bg-white rounded border border-gray-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 text-base outline-none text-gray-700 py-1 px-3 leading-8 transition-colors duration-200 ease-in-out">
+          <button type="submit" class="text-white bg-indigo-500 border-0 py-2 px-8 focus:outline-none hover:bg-indigo-600 rounded text-lg">Send</button>
+        </div>
+      </form>
+    </section>
   </section>
   `
 
