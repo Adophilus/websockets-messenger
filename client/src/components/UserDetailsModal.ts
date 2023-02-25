@@ -28,10 +28,10 @@ class UserDetailsModalElement extends HTMLElement {
   `
   constructor() {
     super()
-    this.innerHTML = this._template
   }
 
   connectedCallback() {
+    this.innerHTML = this._template
     this._form = this.querySelector('#registrationForm') as HTMLFormElement
     this._fields = {
       username: this.querySelector('#username') as HTMLInputElement

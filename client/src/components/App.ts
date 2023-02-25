@@ -1,27 +1,40 @@
 import './UserDetailsModal'
-import { IUserRegistrationEvent } from './UserDetailsModal'
 
 class AppElement extends HTMLElement {
-  // private declare _ws: WebSocket
-  private _username: string
-  private _template = `
-    <ws-user-details-modal></ws-user-details-modal>
-  `
+  // declare private _ws: WebSocket
+  private declare _username: string
+  private declare _registrationModalElement: HTMLElement
+  private declare _chatUIElement: HTMLElement
 
   constructor() {
     super()
-    this.innerHTML = this._template
     // this._ws = new WebSocket(import.meta.env.VITE_WEBSOCKET_URI)
   }
 
   connectedCallback() {
+    this._registrationModalElement = document.createElement(
+      'ws-user-details-modal'
+    )
+    this._chatUIElement = document.createElement('ws-chat-ui')
+
+    this.appendChild(this._registrationModalElement)
+
     this.querySelector('ws-user-details-modal')?.addEventListener(
       'register',
       (e) => {
         this._username = e.detail.username
-        console.log(this._username)
+        this._hideRegistrationModal()
+        this._showChatUI()
       }
     )
+  }
+
+  private _hideRegistrationModal() {
+    this._registrationModalElement.remove()
+  }
+
+  private _showChatUI() {
+    this.appendChild(this._chatUIElement)
   }
 }
 
