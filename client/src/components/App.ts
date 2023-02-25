@@ -12,13 +12,13 @@ class AppElement extends HTMLElement {
   private declare _registrationModalElement: UserDetailsModalElement
   private declare _chatUIElement: ChatUIElement
   private declare _lobbyUIElement: LobbyUIElement
+  private _chatRecepient = ''
 
   constructor() {
     super()
   }
 
   connectedCallback() {
-    const recepient = window.sessionStorage.getItem('recepient')
     this._ws = io(import.meta.env.VITE_WEBSOCKET_URI, { path: '/chat' })
 
     this._ws.on('open', () => {
@@ -26,7 +26,6 @@ class AppElement extends HTMLElement {
     })
 
     this._ws.on('chat-message', (message) => {
-      console.log(message)
       this._chatUIElement.addMessage(new Message(message))
     })
 
@@ -62,15 +61,15 @@ class AppElement extends HTMLElement {
     })
 
     this._chatUIElement.addEventListener('send-message', (ev) => {
-      const recepient = window.sessionStorage.getItem('recepient')
       const message = ev.detail.message
-      this._ws.emit('chat-message', { message, recepient })
+      this._ws.emit('chat-message', { message, recepient: this._chatRecepient })
     })
 
     this._lobbyUIElement.addEventListener('register-recepient', (ev) => {
       const { recepient } = ev.detail
 
-      window.sessionStorage.setItem('recepient', recepient)
+      this._chatRecepient = recepient
+
       this._hideLobbyUI()
       this._showChatUI()
     })
@@ -78,11 +77,10 @@ class AppElement extends HTMLElement {
     if (!this._username) {
       this._showRegistrationModal()
     } else {
-      console.log(this._username)
       this._registerUsername(this._username)
       this._chatUIElement.setAttribute('username', this._username)
 
-      if (!recepient) {
+      if (!this._chatRecepient) {
         this._showLobbyUI()
       } else {
         this._showChatUI()

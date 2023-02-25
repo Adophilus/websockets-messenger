@@ -71,7 +71,7 @@ class ChatUIElement extends HTMLElement {
     usernamePlaceholer.innerHTML = this._username
     this._messageForm.addEventListener(
       'submit',
-      this._messageFormSubmitCallback
+      this._messageFormSubmitCallback.bind(this)
     )
   }
 
@@ -90,16 +90,24 @@ class ChatUIElement extends HTMLElement {
     const messageElement = document.createElement('div')
     messageElement.classList.add('chat-message')
     messageElement.innerHTML = `
+    <p class="flex justify-end">
+      <small class="text-xs">
+        ${message.sender === this._username ?
+        '<strong class="text-indigo-700">You</strong>' :
+        `<strong>${_.escape(message.sender)}</strong>`
+      }
+      </small>
+    </p>
     <p>${_.escape(message.message)}</p>
-    <div>
-      <small class="text-xs">${message.has_read}</small>
+    <div class="flex justify-end">
+      <small class="text-xs">${message.has_read ? '✅' : '❌'}</small>
     </div>
     `
     this._messagesWrapper.appendChild(messageElement)
   }
 
   private _displayNotificationMessage(message: string) {
-    if (!this._isMounted) return false
+    if (!this._isMounted) return
 
     const notificationElement = document.createElement('div')
     notificationElement.classList.add('chat-message')

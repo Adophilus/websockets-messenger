@@ -44,7 +44,6 @@ export default (server: http.Server) => {
       if (getUserByUsername(username)) return false
 
       users.forEach((user) => {
-        logger.info(user)
         io.to(user.sid).emit('user-joined', { username })
         io.to(socket.id).emit('existing-user', { username: user.username })
       })
@@ -58,21 +57,22 @@ export default (server: http.Server) => {
       'chat-message',
       ({ recepient, message }: { recepient: string; message: string }) => {
         const receiver = getUserByUsername(recepient)
-        const sender = getUserBySid(socket.id)!
+        const sender = getUserBySid(socket.id)
 
-        if (!receiver) return false
+        if (!receiver || !sender) return false
 
         logger.info(
           `Received new messge from ${sender.sid}:${userDetails.username} -> ${receiver.sid}:${receiver.username}: '${message}'`
         )
 
-        io.to(receiver.sid).emit('chat-message', {
+        const messageObject = {
           recepient: receiver.username,
           message,
           sender: sender.username,
           has_read: false,
           image: ''
-        })
+        }
+        io.to(receiver.sid).to(sender.sid).emit('chat-message', messageObject)
       }
     )
 

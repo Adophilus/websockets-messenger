@@ -25,7 +25,6 @@ exports.default = (server) => {
             if (getUserByUsername(username))
                 return false;
             users.forEach((user) => {
-                logger.info(user);
                 io.to(user.sid).emit('user-joined', { username });
                 io.to(socket.id).emit('existing-user', { username: user.username });
             });
@@ -36,16 +35,17 @@ exports.default = (server) => {
         socket.on('chat-message', ({ recepient, message }) => {
             const receiver = getUserByUsername(recepient);
             const sender = getUserBySid(socket.id);
-            if (!receiver)
+            if (!receiver || !sender)
                 return false;
             logger.info(`Received new messge from ${sender.sid}:${userDetails.username} -> ${receiver.sid}:${receiver.username}: '${message}'`);
-            io.to(receiver.sid).emit('chat-message', {
+            const messageObject = {
                 recepient: receiver.username,
                 message,
                 sender: sender.username,
                 has_read: false,
                 image: ''
-            });
+            };
+            io.to(receiver.sid).to(sender.sid).emit('chat-message', messageObject);
         });
         socket.on('disconnect', () => {
             const sender = getUserBySid(socket.id);

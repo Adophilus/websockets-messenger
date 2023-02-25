@@ -69,7 +69,7 @@ class LobbyUIElement extends HTMLElement {
   private _registerRecepient(username: string) {
     this.dispatchEvent(
       new CustomEvent('register-recepient', {
-        detail: { username }
+        detail: { recepient: username }
       })
     )
   }
