@@ -1,0 +1,14 @@
+{
+  "name": "websockets-messenger",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "build:client": "cd client && pnpm build",
+    "build:server": "cd server && pnpm build",
+    "build": "pnpm build:client && pnpm build:server && mv client/build server/frontend",
+    "start": "pnpm build && cd server && pnpm start"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}

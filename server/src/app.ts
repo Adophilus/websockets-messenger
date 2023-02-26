@@ -1,3 +1,4 @@
+import path from 'path'
 import express from 'express'
 import cors from 'cors'
 import morgan from 'morgan'
@@ -11,6 +12,7 @@ const app = express()
 const server = http.createServer(app)
 const logger = new Logger()
 
+app.use('/', express.static(path.join('./frontend')))
 app.use(cors())
 app.use(morgan('combined'))
 app.use(bodyParser.urlencoded({ extended: true }))

@@ -46,6 +46,7 @@ class ChatUIElement extends HTMLElement {
   }
 
   attributeChangedCallback(name: string, oldValue: string, newValue: string) {
+    console.log(oldValue)
     switch (name) {
       case 'username':
         this._username = newValue

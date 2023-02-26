@@ -5,6 +5,9 @@ export default defineConfig(({ mode }) => {
   const websocketURI = env.VITE_WEBSOCKET_URI
 
   return {
+    build: {
+      outDir: 'build'
+    },
     server: {
       proxy: {
         '/chat': {
