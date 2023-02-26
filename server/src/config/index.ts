@@ -1,8 +1,12 @@
 import dotenv from 'dotenv'
+import DatabaseConfig from './database.config'
+import ServerConfig from './server.config'
+
 dotenv.config()
 
 const config = {
-  port: process.env.PORT ? parseInt(process.env.PORT) : 5000
+  db: DatabaseConfig,
+  server: ServerConfig
 }
 
 export default config

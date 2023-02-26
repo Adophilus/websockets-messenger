@@ -7,6 +7,7 @@ import { Logger } from 'tslog'
 import http from 'http'
 import config from './config'
 import WebSocketService from './services/websocket.service'
+import Database from './config/sequelize'
 
 const app = express()
 const server = http.createServer(app)
@@ -19,10 +20,19 @@ app.use(bodyParser.urlencoded({ extended: true }))
 
 const io = WebSocketService(server)
 
-const start = () => {
-  server.listen(config.port, () => {
-    logger.info(`Server running on port ${config.port}`)
-  })
+const start = async () => {
+  try {
+    logger.info('Initializing database')
+
+    const db = Database.init()
+    await db.authenticate()
+    await db.sync({ force: true })
+    server.listen(config.server.port, () => {
+      logger.info(`Server running on port ${config.server.port}`)
+    })
+  } catch (err) {
+    logger.fatal(err)
+  }
 }
 
 export { app, io, start }
