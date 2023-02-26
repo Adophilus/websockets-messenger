@@ -12,7 +12,7 @@ const app = express()
 const server = http.createServer(app)
 const logger = new Logger()
 
-app.use('/', express.static(path.join('./frontend')))
+app.use(express.static(path.resolve('../client/build')))
 app.use(cors())
 app.use(morgan('combined'))
 app.use(bodyParser.urlencoded({ extended: true }))
