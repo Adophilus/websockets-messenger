@@ -1,6 +1,7 @@
 import { Server } from 'socket.io'
 import { Logger } from 'tslog'
 import http from 'http'
+import { prisma } from './database.service'
 
 interface IMessage {
   sender: string
@@ -53,9 +54,31 @@ export default (server: http.Server) => {
       users.push(userDetails)
     })
 
+    socket.on('chat-fetch', async ({ recepient }: { recepient: string }, cb) => {
+      const sender = getUserBySid(socket.id)
+
+      if (!sender) return false
+      logger.info(`${sender.sid}:${sender.username} wished to retrieve all messages with ${recepient}`)
+
+      const messages = await prisma.messages.findMany({
+        where: {
+          OR: [
+            { AND: [{ sender: sender.username }, { recepient }] },
+            { AND: [{ sender: recepient }, { recepient: sender.username }] }
+          ]
+        },
+        take: 50,
+        orderBy: {
+          id: 'desc'
+        }
+      })
+
+      cb({ messages })
+    })
+
     socket.on(
       'chat-message',
-      ({ recepient, message }: { recepient: string; message: string }) => {
+      async ({ recepient, message }: { recepient: string; message: string }) => {
         const receiver = getUserByUsername(recepient)
         const sender = getUserBySid(socket.id)
 
@@ -65,13 +88,16 @@ export default (server: http.Server) => {
           `Received new messge from ${sender.sid}:${userDetails.username} -> ${receiver.sid}:${receiver.username}: '${message}'`
         )
 
-        const messageObject = {
-          recepient: receiver.username,
-          message,
-          sender: sender.username,
-          has_read: false,
-          image: ''
-        }
+        const messageObject = await prisma.messages.create({
+          data: {
+            recepient,
+            sender: sender.username,
+            message,
+            has_read: false,
+            image: ''
+          }
+        })
+
         io.to(receiver.sid).to(sender.sid).emit('chat-message', messageObject)
       }
     )
