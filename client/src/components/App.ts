@@ -55,8 +55,7 @@ class AppElement extends HTMLElement {
       this._showLobbyUI()
     })
 
-    this._errorModal.addEventListener('modal-close', () => {
-      console.warn('closing modal')
+    this._errorModal.addEventListener('close', () => {
       this._hideErrorModal()
     })
 

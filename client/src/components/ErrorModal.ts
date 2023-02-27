@@ -1,5 +1,6 @@
 class ErrorModal extends HTMLElement {
   declare private _modalClose: HTMLButtonElement
+  declare private _modalTextElement: HTMLSpanElement
   private _modalText = 'An error occurred!'
 
   constructor() {
@@ -17,7 +18,8 @@ class ErrorModal extends HTMLElement {
     switch (name) {
       case 'message':
         this._modalText = `🔴 ${newValue}`
-        this.render()
+        if (this._modalTextElement)
+          this._modalTextElement.innerHTML = this._modalText
         break
       default:
         break
@@ -25,11 +27,12 @@ class ErrorModal extends HTMLElement {
   }
 
   connectedCallback() {
-    this.render()
+    this.innerHTML = this._template
 
     this._modalClose = this.querySelector("#modalClose") as HTMLButtonElement
+    this._modalTextElement = this.querySelector("#_modalText") as HTMLSpanElement
 
-    this._modalClose.addEventListener('click', this._closeModal)
+    this._modalClose.addEventListener('click', this._closeModal.bind(this))
   }
 
   disconnectedCallback() {
@@ -38,18 +41,13 @@ class ErrorModal extends HTMLElement {
 
   private get _template() {
     return `
-    <span class="text-red-700 font-bold text-xs">${this._modalText}</span>
+    <span id="modalText" class="text-red-700 font-bold text-xs">${this._modalText}</span>
     <button id="modalClose" class="rounded-md border-2 border-red-700 p-1">❌</button>
     `
   }
 
   private _closeModal() {
-    console.warn('..')
-    this.dispatchEvent(new Event('modal-close'))
-  }
-
-  public render() {
-    this.innerHTML = this._template
+    this.dispatchEvent(new Event('close'))
   }
 }
 
