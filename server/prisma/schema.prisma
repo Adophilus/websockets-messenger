@@ -1,0 +1,17 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model messages {
+  id        Int     @id @default(autoincrement())
+  sender    String
+  recepient String
+  image     String
+  message   String
+  has_read  Boolean
+}
