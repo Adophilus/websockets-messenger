@@ -20,25 +20,24 @@ class ChatUIElement extends HTMLElement {
   private declare _messagesWrapper: HTMLElement
   private _isMounted = false
   _template = `
-  <div class="w-full mx-auto md:mt-12 md:w-1/2 lg:w-4/6 space-y-4">
-    <section class="${sectionClassName}">
-      <small class="text-xs">You're chatting as</small>
-      <h3 class="text-xl" id="usernamePlaceholder"></h3>
-    </section>
-    <section class="${sectionClassName}">
-      <div id="messagesWrapper" class="divide-y"></div>
-      <form id="messageForm">
-        <div class="flex">
-          <input type="text" id="message" name="message" class="w-full bg-white rounded border border-gray-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 text-base outline-none text-gray-700 py-1 px-3 leading-8 transition-colors duration-200 ease-in-out">
-          <button type="submit" class="text-white bg-indigo-500 border-0 py-2 px-8 focus:outline-none hover:bg-indigo-600 rounded text-lg">Send</button>
-        </div>
-      </form>
-    </section>
-  </div>
+  <section class="${sectionClassName}">
+    <small class="text-xs">You're chatting as</small>
+    <h3 class="text-xl" id="usernamePlaceholder"></h3>
+  </section>
+  <section class="${sectionClassName}">
+    <div id="messagesWrapper" class="divide-y"></div>
+    <form id="messageForm">
+      <div class="flex">
+        <input type="text" id="message" name="message" class="w-full bg-white rounded border border-gray-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 text-base outline-none text-gray-700 py-1 px-3 leading-8 transition-colors duration-200 ease-in-out">
+        <button type="submit" class="text-white bg-indigo-500 border-0 py-2 px-8 focus:outline-none hover:bg-indigo-600 rounded text-lg">Send</button>
+      </div>
+    </form>
+  </section>
   `
 
   constructor() {
     super()
+    this.setAttribute("class", "space-y-4")
   }
 
   static get observedAttributes() {
@@ -46,7 +45,8 @@ class ChatUIElement extends HTMLElement {
   }
 
   attributeChangedCallback(name: string, oldValue: string, newValue: string) {
-    console.log(oldValue)
+    console.log(`Changing prop ${name} from ${oldValue} -> ${newValue}`)
+
     switch (name) {
       case 'username':
         this._username = newValue

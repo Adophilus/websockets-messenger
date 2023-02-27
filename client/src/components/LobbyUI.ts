@@ -16,18 +16,17 @@ class LobbyUIElement extends HTMLElement {
   private declare _recepientsWrapper: HTMLElement
   private _isMounted = false
   _template = `
-  <div class="w-full mx-auto md:mt-12 md:w-1/2 lg:w-4/6 space-y-4">
-    <section class="${sectionClassName}">
-      <h3 class="text-xl">Lobby</h3>
-    </section>
-    <section class="${sectionClassName}">
-      <div id="recepientsWrapper" class="divide-y"></div>
-    </section>
-  </div>
+  <section class="${sectionClassName}">
+    <h3 class="text-xl">Lobby</h3>
+  </section>
+  <section class="${sectionClassName}">
+    <div id="recepientsWrapper" class="divide-y"></div>
+  </section>
   `
 
   constructor() {
     super()
+    this.setAttribute("class", "space-y-4")
   }
 
   connectedCallback() {
