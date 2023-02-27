@@ -17,7 +17,7 @@ class AppElement extends HTMLElement {
 
   constructor() {
     super()
-    this.setAttribute("class", "block w-full px-4 mx-auto mt-8 md:mt-12 max-w-xl space-y-4")
+    this.setAttribute("class", "flex flex-col w-full px-4 mx-auto mt-8 md:mt-12 max-w-xl gap-y-4")
   }
 
   connectedCallback() {
