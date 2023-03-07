@@ -1,135 +1,122 @@
 import Message from '../utils/Message'
 import ChatUIElement from './ChatUI'
-import LobbyUIElement from './LobbyUI'
+import './LobbyUI'
 import './UserDetailsModal'
 import UserDetailsModalElement from './UserDetailsModal'
 import { io } from 'socket.io-client'
-import ErrorModal from './ErrorModal'
+import './ErrorModal'
+import { LitElement, html } from 'lit'
+import { query, customElement, property } from 'lit/decorators.js'
 
-class AppElement extends HTMLElement {
-  private _ws = io('/', { path: '/chat' })
-  private _username = window.sessionStorage.getItem('username')
-  private _registrationModalElement = new UserDetailsModalElement()
-  private _chatUIElement = new ChatUIElement()
-  private _lobbyUIElement = new LobbyUIElement()
-  private _errorModal = new ErrorModal()
-  private _chatRecepient = ''
+@customElement('ws-app')
+class AppElement extends LitElement {
+  declare private ws
+
+  @query('ws-chat-ui')
+  declare chatUIElement: ChatUIElement
+
+  @property({ attribute: false })
+  username = window.sessionStorage.getItem('username')
+
+  @property({ attribute: false })
+  recepient = ''
+
+  @property({ attribute: false })
+  recepients: string[] = []
+
+  @property({ attribute: false })
+  errors: string[] = []
+
+  @property({ attribute: false })
+  messages: Message[] = []
 
   constructor() {
     super()
+    this.ws = io('/', { path: '/chat' })
     this.setAttribute("class", "flex flex-col w-full px-4 mx-auto mt-8 md:mt-12 max-w-xl gap-y-4")
+    this.ws.on('connect', () => {
+      this.ws.emit('fetch-users', {}, ({ users }: { users: string[] }) => this.recepients = users)
+      this.ws.on('message', (message: Message) => {
+        this.messages.push(message)
+      })
+
+      this.ws.on('user-leave', ({ user }: { user: string }) => this.chatUIElement?.notifyUserLeft(user))
+      this.ws.on('user-join', ({ user }: { user: string }) => {
+        this.recepients.push(user)
+        this.chatUIElement?.notifyUserJoined(user)
+      })
+    })
+
+    this.ws.on('disconnect', () => {
+      this.errors.push('Network connection lost. Reconnecting...')
+    })
   }
 
-  connectedCallback() {
-    this._showErrorModal('Network connection lost. Reconnecting...')
-    this._ws.on('connect', () => {
-      this._ws.on('chat-message', (message) => {
-        this._chatUIElement.addMessage(new Message(message))
-      })
+  get registrationTemplate() {
+    if (this.username) return ''
 
-      this._ws.on('user-joined', ({ username }: { username: string }) => {
-        this._chatUIElement.notifyUserJoined(username)
-        this._lobbyUIElement.addRecepient(username)
-      })
+    return html`
+      <ws-user-details-modal @register="${(ev) => {
+        const { username } = ev.detail
 
-      this._ws.on('existing-user', ({ username }: { username: string }) => {
-        this._lobbyUIElement.addRecepient(username)
-      })
-
-      this._ws.on('user-left', ({ username }: { username: string }) => {
-        this._chatUIElement.notifyUserLeft(username)
-        this._lobbyUIElement.removeRecepient(username)
-      })
-
-      this._ws.on('disconnect', () => {
-        this._showErrorModal('Network connection lost. Reconnecting...')
-      })
-    })
-
-    this._registrationModalElement.addEventListener('register', (ev) => {
-      const { username } = ev.detail
-      this._registerUsername(username)
-      this._chatUIElement.setAttribute('username', username)
-
-      this._hideRegistrationModal()
-      this._showLobbyUI()
-    })
-
-    this._errorModal.addEventListener('close', () => {
-      this._hideErrorModal()
-    })
-
-    this._chatUIElement.addEventListener('send-message', (ev) => {
-      const message = ev.detail.message
-      this._ws.emit('chat-message', { message, recepient: this._chatRecepient })
-    })
-
-    this._lobbyUIElement.addEventListener('register-recepient', (ev) => {
-      const { recepient } = ev.detail
-
-      this._fetchPreviousChatWith(recepient)
-      this._chatRecepient = recepient
-
-      this._hideLobbyUI()
-      this._showChatUI()
-    })
-
-    if (!this._username) {
-      this._showRegistrationModal()
-    } else {
-      this._registerUsername(this._username)
-      this._chatUIElement.setAttribute('username', this._username)
-
-      if (!this._chatRecepient) {
-        this._showLobbyUI()
-      } else {
-        this._showChatUI()
-      }
-    }
+        this.registerUsername(username)
+      }}"></ws-user-details-modal>
+    `
   }
 
-  private _showErrorModal(message: string) {
-    this._errorModal.setAttribute("message", message)
-    this.prepend(this._errorModal)
+  get errorModalTemplate() {
+    if (!this.errors.length) return ''
+
+    return html`
+        ${this.errors.map(error => html`<ws-error-modal @close="${() => this.errors = this.errors.filter(_error => error !== _error)}" message="${error}"></ws-error-modal>`)}
+      `
   }
 
-  private _hideErrorModal() {
-    this._errorModal.remove()
+  get chatUITemplate() {
+    if (!this.username || !this.recepient) return ''
+
+    return html`<ws-chat-ui username="${this.username}" recepient="${this.recepient}" messages="${this.messages}" @send-message="${(ev) => this.sendMessage(ev.detail.message)}"></ws-chat-ui>`
   }
 
-  private _registerUsername(username: string) {
-    this._username = username
+  get lobbyUITemplate() {
+    if (!this.username) return ''
+
+    return html`<ws-lobby-ui @recepient="${(ev) => this.registerRecepient(ev.detail.recepient)}" recepients="${this.recepients}"></ws-lobby-ui>`
+  }
+
+  render() {
+    return html`
+    ${this.errorModalTemplate}
+    ${this.chatUITemplate}
+    ${this.lobbyUITemplate}
+    ${this.registrationTemplate}`
+  }
+
+  sendMessage(message: string) {
+    this.ws.emit('message', { message, recepient: this.recepient })
+  }
+
+  createRenderRoot() { return this; }
+
+  private registerUsername(username: string) {
+    this.username = username
     window.sessionStorage.setItem('username', username)
 
-    this._ws.emit('chat-register', { username })
+    this.ws.emit('register', { username })
   }
 
-  private _fetchPreviousChatWith(username: string) {
-    this._ws.emit('chat-fetch', { recepient: username }, ({ messages }: { messages: IMessage[] }) => {
-      messages.forEach(message => this._chatUIElement.addMessage(message))
+  private registerRecepient(recepient: string) {
+    this.recepient = recepient
+    this.ws.emit('fetch', { recepient }, ({ messages }: { messages: Message[] }) => {
+      this.messages = messages
     })
-  }
-
-  private _hideRegistrationModal() {
-    this._registrationModalElement.remove()
-  }
-
-  private _showRegistrationModal() {
-    this.appendChild(this._registrationModalElement)
-  }
-
-  private _showChatUI() {
-    this.appendChild(this._chatUIElement)
-  }
-
-  private _hideLobbyUI() {
-    this._lobbyUIElement.remove()
-  }
-
-  private _showLobbyUI() {
-    this.appendChild(this._lobbyUIElement)
   }
 }
 
-window.customElements.define('ws-app', AppElement)
+declare global {
+  interface HTMLElementTagNameMap {
+    "ws-app": AppElement;
+  }
+}
+
 export default AppElement
