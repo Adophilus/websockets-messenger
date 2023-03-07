@@ -6,7 +6,7 @@ export interface IMessage {
   has_read: boolean
 }
 
-class Message implements IMessage {
+export class Message implements IMessage {
   declare public sender: string
   declare public recepient: string
   declare public message: string

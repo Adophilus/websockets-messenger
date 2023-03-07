@@ -2,7 +2,7 @@ import Message from '../utils/Message'
 import ChatUIElement from './ChatUI'
 import './LobbyUI'
 import './UserDetailsModal'
-import UserDetailsModalElement from './UserDetailsModal'
+import './UserDetailsModal'
 import { io } from 'socket.io-client'
 import './ErrorModal'
 import { LitElement, html } from 'lit'
@@ -75,13 +75,17 @@ class AppElement extends LitElement {
   get chatUITemplate() {
     if (!this.username || !this.recepient) return ''
 
-    return html`<ws-chat-ui username="${this.username}" recepient="${this.recepient}" messages="${this.messages}" @send-message="${(ev) => this.sendMessage(ev.detail.message)}"></ws-chat-ui>`
+    return html`<ws-chat-ui username="${this.username}"
+      recepient="${this.recepient}" .messages="${this.messages}"
+      @message="${(ev) => this.sendMessage(ev.detail.message)}"></ws-chat-ui>`
   }
 
   get lobbyUITemplate() {
     if (!this.username) return ''
 
-    return html`<ws-lobby-ui @recepient="${(ev) => this.registerRecepient(ev.detail.recepient)}" recepients="${this.recepients}"></ws-lobby-ui>`
+    return html`<ws-lobby-ui
+      @recepient="${(ev) => this.registerRecepient(ev.detail.recepient)}"
+      .recepients="${this.recepients}"></ws-lobby-ui>`
   }
 
   render() {
@@ -96,7 +100,7 @@ class AppElement extends LitElement {
     this.ws.emit('message', { message, recepient: this.recepient })
   }
 
-  createRenderRoot() { return this; }
+  createRenderRoot() { return this }
 
   private registerUsername(username: string) {
     this.username = username
@@ -115,7 +119,7 @@ class AppElement extends LitElement {
 
 declare global {
   interface HTMLElementTagNameMap {
-    "ws-app": AppElement;
+    "ws-app": AppElement
   }
 }
 

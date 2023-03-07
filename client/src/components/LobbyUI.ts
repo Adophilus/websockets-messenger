@@ -1,4 +1,7 @@
 import _ from 'lodash'
+import { LitElement, html } from 'lit'
+import { customElement, property } from 'lit/decorators.js'
+
 
 interface IRegisterRecepientEvent {
   recepient: string
@@ -6,73 +9,57 @@ interface IRegisterRecepientEvent {
 
 declare global {
   interface ElementEventMap {
-    'register-recepient': CustomEvent<IRegisterRecepientEvent>
+    'recepient': CustomEvent<IRegisterRecepientEvent>
   }
 }
 
 const sectionClassName = 'bg-gray-100 shadow-lg p-2 md:p-4 lg:px-8'
 
-class LobbyUIElement extends HTMLElement {
-  private declare _recepientsWrapper: HTMLElement
-  private _isMounted = false
-  _template = `
-  <section class="${sectionClassName}">
-    <h3 class="text-xl">Lobby</h3>
-  </section>
-  <section class="${sectionClassName}">
-    <div id="recepientsWrapper" class="divide-y"></div>
-  </section>
-  `
+@customElement('ws-lobby-ui')
+class LobbyUIElement extends LitElement {
+  @property()
+  recepients: string[] = []
 
   constructor() {
     super()
     this.setAttribute("class", "space-y-4")
   }
 
-  connectedCallback() {
-    this.innerHTML = this._template
-    this._isMounted = true
-
-    this._recepientsWrapper = this.querySelector(
-      '#recepientsWrapper'
-    ) as HTMLElement
-  }
-
-  disconnectedCallback() {
-    this._isMounted = false
-  }
-
-  public addRecepient(username: string) {
-    if (!this._isMounted) return
-
-    const recepientElement = document.createElement('div')
-    recepientElement.setAttribute('id', `recepient-${username}`)
-    recepientElement.classList.add('recepient')
-    recepientElement.innerHTML = `
-    <p>
-      <a href="#">${_.escape(username)}</a>
-    </p>
+  render() {
+    console.log(this.recepients)
+    return html`
+    <section class="${sectionClassName}">
+      <h3 class="text-xl">Lobby</h3>
+    </section>
+    <section class="${sectionClassName}">
+      <div class="divide-y">${this.recepients.map(recepient => this.recepientElement(recepient))}</div>
+    </section>
     `
-    recepientElement.querySelector('a')?.addEventListener('click', (ev) => {
-      ev.preventDefault()
-      this._registerRecepient(username)
-    })
-
-    this._recepientsWrapper.appendChild(recepientElement)
   }
 
-  public removeRecepient(username: string) {
-    this.querySelector(`#recepient-${username}`)?.remove()
-  }
+  createRenderRoot() { return this }
 
-  private _registerRecepient(username: string) {
-    this.dispatchEvent(
-      new CustomEvent('register-recepient', {
-        detail: { recepient: username }
-      })
-    )
+  recepientElement(recepient: string) {
+    return html`<div>
+    <p>
+      <a @click="${(ev) => {
+        ev.preventDefault()
+        this.dispatchEvent(
+          new CustomEvent('recepient', {
+            detail: { recepient }
+          })
+        )
+
+      }}" href="#">${_.escape(recepient)}</a>
+    </p>
+    </div>`
   }
 }
 
-window.customElements.define('ws-lobby-ui', LobbyUIElement)
+declare global {
+  interface HTMLElementTagNameMap {
+    "ws-lobby-ui": LobbyUIElement
+  }
+}
+
 export default LobbyUIElement
