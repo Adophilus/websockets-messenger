@@ -1,4 +1,4 @@
-interface IProps {
+export interface IMessage {
   sender: string
   recepient: string
   message: string
@@ -6,14 +6,14 @@ interface IProps {
   has_read: boolean
 }
 
-class Message {
+class Message implements IMessage {
   declare public sender: string
   declare public recepient: string
   declare public message: string
   declare public image: string
   declare public has_read: boolean
 
-  constructor({ sender, recepient, message, image, has_read }: IProps) {
+  constructor({ sender, recepient, message, image, has_read }: IMessage) {
     this.sender = sender
     this.recepient = recepient
     this.message = message
