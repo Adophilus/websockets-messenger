@@ -1,6 +1,6 @@
 import _ from 'lodash'
 import { LitElement, html } from 'lit'
-import { query, customElement, property } from 'lit/decorators.js'
+import { query, customElement, property, state } from 'lit/decorators.js'
 import Message from '../utils/Message'
 import IEvent, { IEventType } from '../utils/Event'
 
@@ -27,6 +27,12 @@ class ChatUIElement extends LitElement {
   @property()
   username = ''
 
+  @property()
+  recepient = ''
+
+  @state()
+  isRecepientOnline = true
+
   constructor() {
     super()
     this.setAttribute("class", "space-y-4")
@@ -36,10 +42,9 @@ class ChatUIElement extends LitElement {
     return html`
     <div class="p-2">
       <p class="flex justify-end">
-        <small class="text-xs">
           ${message.sender === this.username ?
-        '<strong class="text-indigo-700">You</strong>' :
-        `<strong>${_.escape(message.sender)}</strong>`
+        html`<strong class="text-indigo-700">You</strong>` :
+        html`<strong>${_.escape(message.sender)}</strong>`
       }
         </small>
       </p>
@@ -62,8 +67,7 @@ class ChatUIElement extends LitElement {
   render() {
     return html`
       <section class="${sectionClassName}">
-        <small class="text-xs">You're chatting as</small>
-        <h3 class="text-xl" id="usernamePlaceholder"></h3>
+        <h3 class="text-xl">${this.isRecepientOnline ? '🟢' : '🔴'}${this.recepient}</h3>
       </section>
       <section class="${sectionClassName}">
         <div class="divide-y">
@@ -71,12 +75,8 @@ class ChatUIElement extends LitElement {
       switch (event.type) {
         case 'message':
           return this.messageTemplate(event.message!)
-        case 'user-join':
-          return this.userTemplate(event.user!, event.type)
-        case 'user-leave':
-          return this.userTemplate(event.user!, event.type)
         default:
-          return null
+          return this.determineIfRecepientIsOnline(event)
       }
     })}
         </div>
@@ -97,6 +97,20 @@ class ChatUIElement extends LitElement {
       </form>
     </section>
     `
+  }
+
+  determineIfRecepientIsOnline(event: IEvent) {
+    if (event.type === 'user-join' || event.type === 'user-leave') {
+      console.log(event)
+      if (event.type === 'user-join' && event.user === this.recepient) {
+        this.isRecepientOnline = true
+        console.log(this.isRecepientOnline)
+      }
+      if (event.type === 'user-leave' && event.user === this.recepient) {
+        this.isRecepientOnline = false
+        console.log(this.isRecepientOnline)
+      }
+    }
   }
 }
 

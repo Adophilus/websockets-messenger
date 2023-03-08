@@ -2,7 +2,7 @@ import Message from '../utils/Message'
 import ChatUIElement from './ChatUI'
 import './LobbyUI'
 import './UserDetailsModal'
-import './UserDetailsModal'
+import './ChatUI'
 import { io } from 'socket.io-client'
 import './ErrorModal'
 import { LitElement, html } from 'lit'
@@ -47,12 +47,12 @@ class AppElement extends LitElement {
 
       this.ws.on('user-leave', ({ user }: { user: string }) => {
         this.recepients = this.recepients.filter(recepient => recepient !== user)
-        this.events.push({ type: 'user-leave', user })
+        this.events = [...this.events, { type: 'user-leave', user }]
       })
 
       this.ws.on('user-join', ({ user }: { user: string }) => {
         this.recepients = [...this.recepients, user]
-        this.events.push({ type: 'user-join', user })
+        this.events = [...this.events, { type: 'user-join', user }]
       })
     })
 
@@ -85,6 +85,7 @@ class AppElement extends LitElement {
     if (!this.username || !this.recepient) return ''
 
     return html`<ws-chat-ui username="${this.username}"
+      recepient="${this.recepient}"
       .events="${this.events}"
       @message="${(ev) => this.sendMessage(ev.detail.message)}"></ws-chat-ui>`
   }
