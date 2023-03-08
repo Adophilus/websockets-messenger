@@ -107,7 +107,9 @@ class AppElement extends LitElement {
   }
 
   sendMessage(message: string) {
-    this.ws.emit('message', { message, recepient: this.recepient })
+    this.ws.emit('message', { message, recepient: this.recepient }, ({ message }: { message: Message }) => {
+      this.events = [...this.events, { type: 'message', message }]
+    })
   }
 
   createRenderRoot() { return this }
