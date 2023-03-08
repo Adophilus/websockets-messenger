@@ -26,13 +26,12 @@ class LobbyUIElement extends LitElement {
   }
 
   render() {
-    console.log(this.recepients)
     return html`
     <section class="${sectionClassName}">
       <h3 class="text-xl">Lobby</h3>
     </section>
     <section class="${sectionClassName}">
-      <div class="divide-y">${this.recepients.map(recepient => this.recepientElement(recepient))}</div>
+      <div class="divide-y p-2">${this.recepients.map(recepient => this.recepientElement(recepient))}</div>
     </section>
     `
   }

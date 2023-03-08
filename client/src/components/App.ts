@@ -6,7 +6,8 @@ import './UserDetailsModal'
 import { io } from 'socket.io-client'
 import './ErrorModal'
 import { LitElement, html } from 'lit'
-import { query, customElement, property } from 'lit/decorators.js'
+import { query, customElement, property, state } from 'lit/decorators.js'
+import IEvent from '../utils/Event'
 
 @customElement('ws-app')
 class AppElement extends LitElement {
@@ -15,35 +16,43 @@ class AppElement extends LitElement {
   @query('ws-chat-ui')
   declare chatUIElement: ChatUIElement
 
-  @property({ attribute: false })
+  @state()
   username = window.sessionStorage.getItem('username')
 
-  @property({ attribute: false })
+  @state()
   recepient = ''
 
-  @property({ attribute: false })
+  @state()
   recepients: string[] = []
 
-  @property({ attribute: false })
+  @state()
   errors: string[] = []
 
-  @property({ attribute: false })
-  messages: Message[] = []
+  @state()
+  events: IEvent[] = []
 
   constructor() {
     super()
     this.ws = io('/', { path: '/chat' })
     this.setAttribute("class", "flex flex-col w-full px-4 mx-auto mt-8 md:mt-12 max-w-xl gap-y-4")
     this.ws.on('connect', () => {
-      this.ws.emit('fetch-users', {}, ({ users }: { users: string[] }) => this.recepients = users)
+
+      if (this.username) {
+        this.registerUsername(this.username)
+      }
+
       this.ws.on('message', (message: Message) => {
-        this.messages.push(message)
+        this.events.push({ type: 'message', message })
       })
 
-      this.ws.on('user-leave', ({ user }: { user: string }) => this.chatUIElement?.notifyUserLeft(user))
+      this.ws.on('user-leave', ({ user }: { user: string }) => {
+        this.recepients = this.recepients.filter(recepient => recepient !== user)
+        this.events.push({ type: 'user-leave', user })
+      })
+
       this.ws.on('user-join', ({ user }: { user: string }) => {
-        this.recepients.push(user)
-        this.chatUIElement?.notifyUserJoined(user)
+        this.recepients = [...this.recepients, user]
+        this.events.push({ type: 'user-join', user })
       })
     })
 
@@ -76,12 +85,12 @@ class AppElement extends LitElement {
     if (!this.username || !this.recepient) return ''
 
     return html`<ws-chat-ui username="${this.username}"
-      recepient="${this.recepient}" .messages="${this.messages}"
+      .events="${this.events}"
       @message="${(ev) => this.sendMessage(ev.detail.message)}"></ws-chat-ui>`
   }
 
   get lobbyUITemplate() {
-    if (!this.username) return ''
+    if (!this.username || this.recepient) return ''
 
     return html`<ws-lobby-ui
       @recepient="${(ev) => this.registerRecepient(ev.detail.recepient)}"
@@ -106,13 +115,17 @@ class AppElement extends LitElement {
     this.username = username
     window.sessionStorage.setItem('username', username)
 
-    this.ws.emit('register', { username })
+    this.ws.emit('register', { username }, () => {
+      this.ws.emit('fetch-users', {}, ({ users }: { users: string[] }) => {
+        this.recepients = users.filter(user => user !== this.username)
+      })
+    })
   }
 
   private registerRecepient(recepient: string) {
     this.recepient = recepient
     this.ws.emit('fetch', { recepient }, ({ messages }: { messages: Message[] }) => {
-      this.messages = messages
+      this.events = this.events.concat(messages.map(message => ({ type: 'message', message })))
     })
   }
 }

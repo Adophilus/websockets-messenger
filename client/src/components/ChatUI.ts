@@ -45,15 +45,15 @@ class ChatUIElement extends LitElement {
       </p>
       <p>${_.escape(message.message)}</p>
       <div class="flex justify-end">
-        <small class="text-xs">${message.has_read ? '✅' : '❌'}</small>
+        <small class="text-xs">${message.has_read ? '✔️' : '❌'}</small>
       </div>
     </div>
     `
   }
 
-  userTemplate(username: string, action: IEventType) {
+  userTemplate(user: string, action: IEventType) {
     return html`<div class="p-2">
-      <p class="font-bold">${_.escape(username)} ${action.type === "user-joined" ? "has come online" : "has gone offline"}</p>
+      <p class="font-bold">${_.escape(user)} ${action === "user-join" ? "has come online" : "has gone offline"}</p>
     </div>`
   }
 
@@ -72,9 +72,9 @@ class ChatUIElement extends LitElement {
         case 'message':
           return this.messageTemplate(event.message!)
         case 'user-join':
-          return this.userTemplate(event.username!, event.type)
+          return this.userTemplate(event.user!, event.type)
         case 'user-leave':
-          return this.userTemplate(event.username!, event.type)
+          return this.userTemplate(event.user!, event.type)
         default:
           return null
       }
