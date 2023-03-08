@@ -41,24 +41,35 @@ export default (server: http.Server) => {
 
     logger.info(`New connection from ${socket.id}`)
 
-    socket.on('chat-register', ({ username }: { username: string }) => {
+    socket.on('register', ({ username }: { username: string }, cb) => {
       if (getUserByUsername(username)) return false
 
       users.forEach((user) => {
-        io.to(user.sid).emit('user-joined', { username })
-        io.to(socket.id).emit('existing-user', { username: user.username })
+        io.to(user.sid).emit('user-join', { user: username })
       })
 
       logger.info(`${socket.id} registered as ${username}`)
       userDetails = { username, sid: socket.id }
       users.push(userDetails)
+
+      cb()
     })
 
-    socket.on('chat-fetch', async ({ recepient }: { recepient: string }, cb) => {
+    socket.on('fetch-users', (_, cb) => {
+      console.log(_)
       const sender = getUserBySid(socket.id)
 
       if (!sender) return false
-      logger.info(`${sender.sid}:${sender.username} wished to retrieve all messages with ${recepient}`)
+      logger.info(`${sender.sid}:${sender.username} wishes to retrieve all online users`)
+
+      cb({ users: users.map((user) => user.username) })
+    })
+
+    socket.on('fetch', async ({ recepient }: { recepient: string }, cb) => {
+      const sender = getUserBySid(socket.id)
+
+      if (!sender) return false
+      logger.info(`${sender.sid}:${sender.username} wishes to retrieve all messages with ${recepient}`)
 
       const messages = await prisma.messages.findMany({
         where: {
@@ -77,7 +88,7 @@ export default (server: http.Server) => {
     })
 
     socket.on(
-      'chat-message',
+      'message',
       async ({ recepient, message }: { recepient: string; message: string }) => {
         const receiver = getUserByUsername(recepient)
         const sender = getUserBySid(socket.id)
@@ -110,7 +121,7 @@ export default (server: http.Server) => {
 
       users.forEach((user, index) => {
         if (user.sid === socket.id) users.splice(index, 1)
-        else io.to(user.sid).emit('user-left', { username: sender.username })
+        else io.to(user.sid).emit('user-leave', { user: sender.username })
       })
     })
   })
