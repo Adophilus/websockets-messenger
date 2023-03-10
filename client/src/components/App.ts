@@ -42,7 +42,15 @@ class AppElement extends LitElement {
       }
 
       this.ws.on('message', (message: Message) => {
-        this.events.push({ type: 'message', message })
+        this.events = [...this.events, { type: 'message', message }]
+      })
+
+      this.ws.on('read-message', ({ id }) => {
+        this.events = this.events.map(event => {
+          if (event.type === 'message' && event.message?.id === id)
+            return Object.assign(event, { message: { ...event.message, has_read: true } })
+          return event
+        })
       })
 
       this.ws.on('user-leave', ({ user }: { user: string }) => {
@@ -87,7 +95,8 @@ class AppElement extends LitElement {
     return html`<ws-chat-ui username="${this.username}"
       recepient="${this.recepient}"
       .events="${this.events}"
-      @message="${(ev) => this.sendMessage(ev.detail.message)}"></ws-chat-ui>`
+      @message="${(ev) => this.sendMessage(ev.detail.message)}"
+      @read-message="${(ev) => this.readMessage(ev.detail.message)}"></ws-chat-ui>`
   }
 
   get lobbyUITemplate() {
@@ -112,6 +121,10 @@ class AppElement extends LitElement {
     })
   }
 
+  readMessage(message: Message) {
+    this.ws.emit('read-message', { id: message.id })
+  }
+
   createRenderRoot() { return this }
 
   private registerUsername(username: string) {
@@ -128,7 +141,7 @@ class AppElement extends LitElement {
   private registerRecepient(recepient: string) {
     this.recepient = recepient
     this.ws.emit('fetch', { recepient }, ({ messages }: { messages: Message[] }) => {
-      this.events = this.events.concat(messages.map(message => ({ type: 'message', message })))
+      this.events = this.events.concat(messages.map(message => ({ type: 'message', message }))).reverse()
     })
   }
 }

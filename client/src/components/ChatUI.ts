@@ -35,10 +35,20 @@ class ChatUIElement extends LitElement {
 
   constructor() {
     super()
-    this.setAttribute("class", "space-y-4")
+    this.setAttribute("class", "space-y-4 h-[400px]")
+  }
+
+  readMessage(message: Message) {
+    if (message.recepient !== this.username)
+      return
+    if (message.has_read)
+      return
+    this.dispatchEvent(new CustomEvent('read-message', { detail: { message } }))
   }
 
   messageTemplate(message: Message) {
+    this.readMessage(message)
+
     return html`
     <div class="p-2">
       <p class="flex justify-end">
@@ -69,7 +79,7 @@ class ChatUIElement extends LitElement {
       <section class="${sectionClassName}">
         <h3 class="text-xl">${this.isRecepientOnline ? '🟢' : '🔴'}${this.recepient}</h3>
       </section>
-      <section class="${sectionClassName}">
+      <section class="${sectionClassName} h-full overflow-y-auto">
         <div class="divide-y">
         ${this.events.map(event => {
       switch (event.type) {
@@ -80,6 +90,8 @@ class ChatUIElement extends LitElement {
       }
     })}
         </div>
+      </section>
+      <section class="${sectionClassName}">
         <form @submit="${(ev) => {
         ev.preventDefault()
         this.dispatchEvent(
@@ -89,6 +101,7 @@ class ChatUIElement extends LitElement {
             }
           })
         )
+        this.messageInput.value = ''
       }}">
         <div class="flex">
           <input type="text" id="message" name="message" class="w-full bg-white rounded border border-gray-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 text-base outline-none text-gray-700 py-1 px-3 leading-8 transition-colors duration-200 ease-in-out">
@@ -101,14 +114,11 @@ class ChatUIElement extends LitElement {
 
   determineIfRecepientIsOnline(event: IEvent) {
     if (event.type === 'user-join' || event.type === 'user-leave') {
-      console.log(event)
       if (event.type === 'user-join' && event.user === this.recepient) {
         this.isRecepientOnline = true
-        console.log(this.isRecepientOnline)
       }
       if (event.type === 'user-leave' && event.user === this.recepient) {
         this.isRecepientOnline = false
-        console.log(this.isRecepientOnline)
       }
     }
   }
