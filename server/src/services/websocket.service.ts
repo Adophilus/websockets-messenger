@@ -56,7 +56,6 @@ export default (server: http.Server) => {
     })
 
     socket.on('fetch-users', (_, cb) => {
-      console.log(_)
       const sender = getUserBySid(socket.id)
 
       if (!sender) return false
@@ -80,7 +79,7 @@ export default (server: http.Server) => {
         },
         take: 50,
         orderBy: {
-          id: 'desc'
+          created_at: 'desc'
         }
       })
 
@@ -89,7 +88,7 @@ export default (server: http.Server) => {
 
     socket.on(
       'message',
-      async ({ recepient, message }: { recepient: string; message: string }) => {
+      async ({ recepient, message }: { recepient: string; message: string }, cb) => {
         const receiver = getUserByUsername(recepient)
         const sender = getUserBySid(socket.id)
 
@@ -109,7 +108,41 @@ export default (server: http.Server) => {
           }
         })
 
-        io.to(receiver.sid).to(sender.sid).emit('chat-message', messageObject)
+        io.to(receiver.sid).emit('message', messageObject)
+        cb({ message: messageObject })
+      }
+    )
+
+    socket.on(
+      'read-message',
+      async ({ id: messageId }: { id: string }, cb) => {
+        const id = parseInt(messageId)
+        const sender = getUserBySid(socket.id)
+        const message = await prisma.messages.findFirst({
+          where: {
+            id
+          }
+        })
+        if (!sender || !message) return
+        if (message.recepient !== sender.username) return
+
+        const receiver = getUserByUsername(message.sender)
+
+        logger.info(
+          `${sender.sid}:${userDetails.username} -> has read message '${message.id}:${message.message}'`
+        )
+
+        await prisma.messages.update({
+          where: {
+            id
+          },
+          data: {
+            has_read: true
+          }
+        })
+
+        if (receiver)
+          io.to(receiver.sid).emit('read-message', { id: message.id })
       }
     )
 

@@ -8,10 +8,12 @@ datasource db {
 }
 
 model messages {
-  id        Int     @id @default(autoincrement())
-  sender    String
-  recepient String
-  image     String
-  message   String
-  has_read  Boolean
+  id         Int      @id @default(autoincrement())
+  sender     String
+  recepient  String
+  image      String
+  message    String
+  has_read   Boolean
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 }
