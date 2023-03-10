@@ -1,4 +1,5 @@
 export interface IMessage {
+  id: string
   sender: string
   recepient: string
   message: string
@@ -7,13 +8,15 @@ export interface IMessage {
 }
 
 export class Message implements IMessage {
+  declare public id: string
   declare public sender: string
   declare public recepient: string
   declare public message: string
   declare public image: string
   declare public has_read: boolean
 
-  constructor({ sender, recepient, message, image, has_read }: IMessage) {
+  constructor({ id, sender, recepient, message, image, has_read }: IMessage) {
+    this.id = id
     this.sender = sender
     this.recepient = recepient
     this.message = message
