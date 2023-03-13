@@ -25,6 +25,18 @@ const getUserBySid = (sid: string) => {
 const getUserByUsername = (username: string) => {
   return users.find((user) => user.username === username)
 }
+const getUnreadMessagesBetween = async ({ sender, recepient }: { sender: string, recepient: string }) => {
+  const aggregation = await prisma.messages.aggregate({
+    where: {
+      recepient,
+      sender,
+      has_read: false
+    },
+    _count: true
+  })
+  console.log(`${sender} -> ${recepient}: ${aggregation._count}`)
+  return aggregation._count
+}
 
 export default (server: http.Server) => {
   const io = new Server(server, {
@@ -55,13 +67,29 @@ export default (server: http.Server) => {
       cb()
     })
 
-    socket.on('fetch-users', (_, cb) => {
+    socket.on('fetch-users', async (_, cb) => {
       const sender = getUserBySid(socket.id)
 
       if (!sender) return false
       logger.info(`${sender.sid}:${sender.username} wishes to retrieve all online users`)
 
-      cb({ users: users.map((user) => user.username) })
+      cb({
+        users: await Promise.all(users.map(async (user) => ({
+          username: user.username,
+          unreadMessagesCount: await getUnreadMessagesBetween({ sender: user.username, recepient: sender.username })
+        })))
+      })
+    })
+
+    socket.on('unread-messages-count', async ({ username }: { username: string }, cb) => {
+      const sender = getUserBySid(socket.id)
+      const recepient = getUserByUsername(username)
+
+      if (!sender || !recepient) return false
+      logger.info(`${sender.sid}:${sender.username} wishes to retrieve the number of unread messages with ${recepient.sid}:${recepient.username}`)
+
+      const unreadMessagesCount = await getUnreadMessagesBetween({ sender: recepient.username, recepient: sender.username })
+      cb({ unreadMessagesCount })
     })
 
     socket.on('fetch', async ({ recepient }: { recepient: string }, cb) => {
@@ -87,7 +115,7 @@ export default (server: http.Server) => {
     })
 
     socket.on(
-      'message',
+      'send-message',
       async ({ recepient, message }: { recepient: string; message: string }, cb) => {
         const receiver = getUserByUsername(recepient)
         const sender = getUserBySid(socket.id)
@@ -143,6 +171,7 @@ export default (server: http.Server) => {
 
         if (receiver)
           io.to(receiver.sid).emit('read-message', { id: message.id })
+        cb()
       }
     )
 
