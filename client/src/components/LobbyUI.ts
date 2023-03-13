@@ -32,14 +32,15 @@ class LobbyUIElement extends LitElement {
       <h3 class="text-xl">Lobby</h3>
     </section>
     <section class="${sectionClassName}">
-      <div class="divide-y p-2">${this.recepients.map(recepient => this.recepientElement(recepient))}</div>
+      <div class="divide-y p-2">${this.recepients.length === 0 ? html`No one is online 🙁` : this.recepients.map(recepient => this.recepientElementTemplate(recepient))}</div>
     </section>
     `
   }
 
   createRenderRoot() { return this }
 
-  recepientElement(recepient: Recepient) {
+  recepientElementTemplate(recepient: Recepient) {
+    console.log(recepient)
     return html`<div>
     <p>
       <a @click="${(ev: MouseEvent) => {
@@ -54,9 +55,9 @@ class LobbyUIElement extends LitElement {
         <span>
           ${_.escape(recepient.username)}
         </span>
-        ${recepient.unreadMessageCount > 0 ? html`
+        ${recepient.unreadMessagesCount > 0 ? html`
           <span className="bg-red-700 text-white p-2 rounded-full">
-            ${recepient.unreadMessageCount}
+            ${recepient.unreadMessagesCount}
           </span>
           `: null}
         </a>
