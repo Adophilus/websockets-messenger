@@ -1,5 +1,5 @@
 import { LitElement, html } from 'lit'
-import { query, customElement, property } from 'lit/decorators.js'
+import { query, customElement } from 'lit/decorators.js'
 
 export interface IUserRegistrationEvent {
   username: string
@@ -24,7 +24,7 @@ class UserDetailsModalElement extends LitElement {
 
   render() {
     return html`
-    <form @submit="${(ev) => {
+    <form @submit="${(ev: SubmitEvent) => {
         ev.preventDefault()
         const username = this.userNameInput.value
         this.dispatchEvent(

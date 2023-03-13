@@ -1,10 +1,11 @@
 import _ from 'lodash'
 import { LitElement, html } from 'lit'
 import { customElement, property } from 'lit/decorators.js'
+import Recepient from '../utils/Recepient'
 
 
-interface IRegisterRecepientEvent {
-  recepient: string
+export interface IRegisterRecepientEvent {
+  recepient: Recepient
 }
 
 declare global {
@@ -18,7 +19,7 @@ const sectionClassName = 'bg-gray-100 shadow-lg p-2 md:p-4 lg:px-8'
 @customElement('ws-lobby-ui')
 class LobbyUIElement extends LitElement {
   @property()
-  recepients: string[] = []
+  recepients: Recepient[] = []
 
   constructor() {
     super()
@@ -38,10 +39,10 @@ class LobbyUIElement extends LitElement {
 
   createRenderRoot() { return this }
 
-  recepientElement(recepient: string) {
+  recepientElement(recepient: Recepient) {
     return html`<div>
     <p>
-      <a @click="${(ev) => {
+      <a @click="${(ev: MouseEvent) => {
         ev.preventDefault()
         this.dispatchEvent(
           new CustomEvent('recepient', {
@@ -49,7 +50,16 @@ class LobbyUIElement extends LitElement {
           })
         )
 
-      }}" href="#">${_.escape(recepient)}</a>
+      }}" href="#" className="flex justify-between">
+        <span>
+          ${_.escape(recepient.username)}
+        </span>
+        ${recepient.unreadMessageCount > 0 ? html`
+          <span className="bg-red-700 text-white p-2 rounded-full">
+            ${recepient.unreadMessageCount}
+          </span>
+          `: null}
+        </a>
     </p>
     </div>`
   }
