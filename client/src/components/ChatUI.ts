@@ -4,9 +4,14 @@ import { query, customElement, property, state } from 'lit/decorators.js'
 import Message from '../utils/Message'
 import IEvent, { IEventType } from '../utils/Event'
 
-interface ISendMessageEvent {
+export interface ISendMessageEvent {
   message: string
 }
+
+export interface IReadMessageEvent {
+  message: Message
+}
+
 
 declare global {
   interface ElementEventMap {
@@ -92,7 +97,7 @@ class ChatUIElement extends LitElement {
         </div>
       </section>
       <section class="${sectionClassName}">
-        <form @submit="${(ev) => {
+        <form @submit="${(ev: SubmitEvent) => {
         ev.preventDefault()
         this.dispatchEvent(
           new CustomEvent('message', {

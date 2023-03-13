@@ -1,13 +1,16 @@
 import Message from '../utils/Message'
-import ChatUIElement from './ChatUI'
+import ChatUIElement, { IReadMessageEvent, ISendMessageEvent } from './ChatUI'
 import './LobbyUI'
 import './UserDetailsModal'
 import './ChatUI'
 import { io } from 'socket.io-client'
 import './ErrorModal'
 import { LitElement, html } from 'lit'
-import { query, customElement, property, state } from 'lit/decorators.js'
+import { query, customElement, state } from 'lit/decorators.js'
 import IEvent from '../utils/Event'
+import Recepient from '../utils/Recepient'
+import { IUserRegistrationEvent } from './UserDetailsModal'
+import { IRegisterRecepientEvent } from './LobbyUI'
 
 @customElement('ws-app')
 class AppElement extends LitElement {
@@ -20,10 +23,10 @@ class AppElement extends LitElement {
   username = window.sessionStorage.getItem('username')
 
   @state()
-  recepient = ''
+  declare recepient: Recepient
 
   @state()
-  recepients: string[] = []
+  recepients: Recepient[] = []
 
   @state()
   errors: string[] = []
@@ -54,13 +57,18 @@ class AppElement extends LitElement {
       })
 
       this.ws.on('user-leave', ({ user }: { user: string }) => {
-        this.recepients = this.recepients.filter(recepient => recepient !== user)
+        this.recepients = this.recepients.filter(recepient => recepient.username !== user)
         this.events = [...this.events, { type: 'user-leave', user }]
       })
 
       this.ws.on('user-join', ({ user }: { user: string }) => {
-        this.recepients = [...this.recepients, user]
+        this.recepients = [...this.recepients, new Recepient({ username: user })]
         this.events = [...this.events, { type: 'user-join', user }]
+        this.ws.emit('unread-message-count', { user: user }, ({ unreadMessageCount }: { unreadMessageCount: number }) => {
+          const recepient = this.recepients.find(recepient => recepient.username === user)
+          if (!recepient) return
+          recepient.unreadMessageCount = unreadMessageCount
+        })
       })
     })
 
@@ -73,7 +81,7 @@ class AppElement extends LitElement {
     if (this.username) return ''
 
     return html`
-      <ws-user-details-modal @register="${(ev) => {
+      <ws-user-details-modal @register="${(ev: CustomEvent<IUserRegistrationEvent>) => {
         const { username } = ev.detail
 
         this.registerUsername(username)
@@ -93,17 +101,17 @@ class AppElement extends LitElement {
     if (!this.username || !this.recepient) return ''
 
     return html`<ws-chat-ui username="${this.username}"
-      recepient="${this.recepient}"
+      .recepient="${this.recepient}"
       .events="${this.events}"
-      @message="${(ev) => this.sendMessage(ev.detail.message)}"
-      @read-message="${(ev) => this.readMessage(ev.detail.message)}"></ws-chat-ui>`
+      @message="${(ev: CustomEvent<ISendMessageEvent>) => this.sendMessage(ev.detail.message)}"
+      @read-message="${(ev: CustomEvent<IReadMessageEvent>) => this.readMessage(ev.detail.message)}"></ws-chat-ui>`
   }
 
   get lobbyUITemplate() {
     if (!this.username || this.recepient) return ''
 
     return html`<ws-lobby-ui
-      @recepient="${(ev) => this.registerRecepient(ev.detail.recepient)}"
+      @recepient="${(ev: CustomEvent<IRegisterRecepientEvent>) => this.registerRecepient(ev.detail.recepient)}"
       .recepients="${this.recepients}"></ws-lobby-ui>`
   }
 
@@ -133,14 +141,14 @@ class AppElement extends LitElement {
 
     this.ws.emit('register', { username }, () => {
       this.ws.emit('fetch-users', {}, ({ users }: { users: string[] }) => {
-        this.recepients = users.filter(user => user !== this.username)
+        this.recepients = users.filter(user => user !== this.username).map(user => new Recepient({ username: user }))
       })
     })
   }
 
-  private registerRecepient(recepient: string) {
+  private registerRecepient(recepient: Recepient) {
     this.recepient = recepient
-    this.ws.emit('fetch', { recepient }, ({ messages }: { messages: Message[] }) => {
+    this.ws.emit('fetch', { recepient: recepient.username }, ({ messages }: { messages: Message[] }) => {
       this.events = this.events.concat(messages.map(message => ({ type: 'message', message }))).reverse()
     })
   }
