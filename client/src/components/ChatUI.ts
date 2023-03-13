@@ -2,7 +2,8 @@ import _ from 'lodash'
 import { LitElement, html } from 'lit'
 import { query, customElement, property, state } from 'lit/decorators.js'
 import Message from '../utils/Message'
-import IEvent, { IEventType } from '../utils/Event'
+import TEvent, { TEventType } from '../utils/Event'
+import Recepient from '../utils/Recepient'
 
 export interface ISendMessageEvent {
   message: string
@@ -15,7 +16,7 @@ export interface IReadMessageEvent {
 
 declare global {
   interface ElementEventMap {
-    'message': CustomEvent<ISendMessageEvent>
+    'send-message': CustomEvent<ISendMessageEvent>
   }
 }
 
@@ -27,13 +28,13 @@ class ChatUIElement extends LitElement {
   declare messageInput: HTMLInputElement
 
   @property()
-  events: IEvent[] = []
+  events: TEvent[] = []
 
   @property()
   username = ''
 
   @property()
-  recepient = ''
+  declare recepient: Recepient
 
   @state()
   isRecepientOnline = true
@@ -71,7 +72,7 @@ class ChatUIElement extends LitElement {
     `
   }
 
-  userTemplate(user: string, action: IEventType) {
+  userTemplate(user: string, action: TEventType) {
     return html`<div class="p-2">
       <p class="font-bold">${_.escape(user)} ${action === "user-join" ? "has come online" : "has gone offline"}</p>
     </div>`
@@ -82,7 +83,7 @@ class ChatUIElement extends LitElement {
   render() {
     return html`
       <section class="${sectionClassName}">
-        <h3 class="text-xl">${this.isRecepientOnline ? '🟢' : '🔴'}${this.recepient}</h3>
+        <h3 class="text-xl">${this.isRecepientOnline ? '🟢' : '🔴'}${this.recepient.username}</h3>
       </section>
       <section class="${sectionClassName} h-full overflow-y-auto">
         <div class="divide-y">
@@ -100,7 +101,7 @@ class ChatUIElement extends LitElement {
         <form @submit="${(ev: SubmitEvent) => {
         ev.preventDefault()
         this.dispatchEvent(
-          new CustomEvent('message', {
+          new CustomEvent('send-message', {
             detail: {
               message: this.messageInput.value
             }
@@ -117,12 +118,12 @@ class ChatUIElement extends LitElement {
     `
   }
 
-  determineIfRecepientIsOnline(event: IEvent) {
+  determineIfRecepientIsOnline(event: TEvent) {
     if (event.type === 'user-join' || event.type === 'user-leave') {
-      if (event.type === 'user-join' && event.user === this.recepient) {
+      if (event.type === 'user-join' && event.user === this.recepient.username) {
         this.isRecepientOnline = true
       }
-      if (event.type === 'user-leave' && event.user === this.recepient) {
+      if (event.type === 'user-leave' && event.user === this.recepient.username) {
         this.isRecepientOnline = false
       }
     }

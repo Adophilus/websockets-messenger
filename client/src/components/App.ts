@@ -7,7 +7,7 @@ import { io } from 'socket.io-client'
 import './ErrorModal'
 import { LitElement, html } from 'lit'
 import { query, customElement, state } from 'lit/decorators.js'
-import IEvent from '../utils/Event'
+import TEvent from '../utils/Event'
 import Recepient from '../utils/Recepient'
 import { IUserRegistrationEvent } from './UserDetailsModal'
 import { IRegisterRecepientEvent } from './LobbyUI'
@@ -32,7 +32,7 @@ class AppElement extends LitElement {
   errors: string[] = []
 
   @state()
-  events: IEvent[] = []
+  events: TEvent[] = []
 
   constructor() {
     super()
@@ -64,10 +64,10 @@ class AppElement extends LitElement {
       this.ws.on('user-join', ({ user }: { user: string }) => {
         this.recepients = [...this.recepients, new Recepient({ username: user })]
         this.events = [...this.events, { type: 'user-join', user }]
-        this.ws.emit('unread-message-count', { user: user }, ({ unreadMessageCount }: { unreadMessageCount: number }) => {
+        this.ws.emit('unread-messages-count', { user: user }, ({ unreadMessageCount }: { unreadMessageCount: number }) => {
           const recepient = this.recepients.find(recepient => recepient.username === user)
           if (!recepient) return
-          recepient.unreadMessageCount = unreadMessageCount
+          recepient.unreadMessagesCount = unreadMessageCount
         })
       })
     })
@@ -103,7 +103,7 @@ class AppElement extends LitElement {
     return html`<ws-chat-ui username="${this.username}"
       .recepient="${this.recepient}"
       .events="${this.events}"
-      @message="${(ev: CustomEvent<ISendMessageEvent>) => this.sendMessage(ev.detail.message)}"
+      @send-message="${(ev: CustomEvent<ISendMessageEvent>) => this.sendMessage(ev.detail.message)}"
       @read-message="${(ev: CustomEvent<IReadMessageEvent>) => this.readMessage(ev.detail.message)}"></ws-chat-ui>`
   }
 
@@ -124,13 +124,25 @@ class AppElement extends LitElement {
   }
 
   sendMessage(message: string) {
-    this.ws.emit('message', { message, recepient: this.recepient }, ({ message }: { message: Message }) => {
+    this.ws.emit('send-message', { message, recepient: this.recepient.username }, ({ message }: { message: Message }) => {
       this.events = [...this.events, { type: 'message', message }]
     })
   }
 
   readMessage(message: Message) {
-    this.ws.emit('read-message', { id: message.id })
+    this.ws.emit('read-message', { id: message.id }, () => {
+      this.events = this.events.map((event) => {
+        if (!(event.type === 'message') || !event.message) return event
+        if (!(event.message.id === message.id)) return event
+        return {
+          ...event,
+          message: {
+            ...event.message,
+            has_read: true
+          }
+        }
+      })
+    })
   }
 
   createRenderRoot() { return this }
@@ -140,8 +152,8 @@ class AppElement extends LitElement {
     window.sessionStorage.setItem('username', username)
 
     this.ws.emit('register', { username }, () => {
-      this.ws.emit('fetch-users', {}, ({ users }: { users: string[] }) => {
-        this.recepients = users.filter(user => user !== this.username).map(user => new Recepient({ username: user }))
+      this.ws.emit('fetch-users', {}, ({ users }: { users: Recepient[] }) => {
+        this.recepients = users.filter(user => user.username !== this.username).map(user => new Recepient(user))
       })
     })
   }
