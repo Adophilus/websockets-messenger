@@ -9,7 +9,7 @@
   "plugins": [
     "prettier-plugin-prisma",
     "prettier-plugin-organize-imports",
-    "prettier-plugin-tailwind"
+    "prettier-plugin-tailwindcss"
   ],
   "pluginSearchDirs": false
 }
