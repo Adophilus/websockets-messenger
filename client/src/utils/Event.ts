@@ -2,7 +2,7 @@ import { IMessage } from "./Message"
 
 export type TEvent = {
   type: TEventType
-  user?: string
+  username: string | null
   message?: IMessage
 }
 
