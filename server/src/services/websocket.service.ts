@@ -25,6 +25,7 @@ const getUserBySid = (sid: string) => {
 const getUserByUsername = (username: string) => {
   return users.find((user) => user.username === username)
 }
+
 const getUnreadMessagesBetween = async ({ sender, recepient }: { sender: string, recepient: string }) => {
   const aggregation = await prisma.messages.aggregate({
     where: {
@@ -34,7 +35,6 @@ const getUnreadMessagesBetween = async ({ sender, recepient }: { sender: string,
     },
     _count: true
   })
-  console.log(`${sender} -> ${recepient}: ${aggregation._count}`)
   return aggregation._count
 }
 
@@ -57,7 +57,7 @@ export default (server: http.Server) => {
       if (getUserByUsername(username)) return false
 
       users.forEach((user) => {
-        io.to(user.sid).emit('user-join', { user: username })
+        io.to(user.sid).emit('user-join', { username })
       })
 
       logger.info(`${socket.id} registered as ${username}`)
@@ -137,6 +137,7 @@ export default (server: http.Server) => {
         })
 
         io.to(receiver.sid).emit('message', messageObject)
+        io.to(receiver.sid).emit('unread-messages-count', { username: receiver.username, unreadMessagesCount: await getUnreadMessagesBetween({ sender: sender.username, recepient: receiver.username }) })
         cb({ message: messageObject })
       }
     )
@@ -183,7 +184,7 @@ export default (server: http.Server) => {
 
       users.forEach((user, index) => {
         if (user.sid === socket.id) users.splice(index, 1)
-        else io.to(user.sid).emit('user-leave', { user: sender.username })
+        else io.to(user.sid).emit('user-leave', { username: sender.username })
       })
     })
   })
