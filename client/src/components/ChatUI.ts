@@ -1,6 +1,7 @@
 import _ from 'lodash'
 import { LitElement, html } from 'lit'
 import { query, customElement, property, state } from 'lit/decorators.js'
+import { repeat } from 'lit/directives/repeat.js'
 import Message from '../utils/Message'
 import TEvent, { TEventType } from '../utils/Event'
 import Recepient from '../utils/Recepient'
@@ -87,7 +88,7 @@ class ChatUIElement extends LitElement {
       </section>
       <section class="${sectionClassName} h-full overflow-y-auto">
         <div class="divide-y">
-        ${this.events.map(event => {
+        ${repeat(this.events, (event: TEvent) => event?.message?.id, (event: TEvent) => {
       switch (event.type) {
         case 'message':
           return this.messageTemplate(event.message!)
@@ -120,10 +121,10 @@ class ChatUIElement extends LitElement {
 
   determineIfRecepientIsOnline(event: TEvent) {
     if (event.type === 'user-join' || event.type === 'user-leave') {
-      if (event.type === 'user-join' && event.user === this.recepient.username) {
+      if (event.type === 'user-join' && event.username === this.recepient.username) {
         this.isRecepientOnline = true
       }
-      if (event.type === 'user-leave' && event.user === this.recepient.username) {
+      if (event.type === 'user-leave' && event.username === this.recepient.username) {
         this.isRecepientOnline = false
       }
     }

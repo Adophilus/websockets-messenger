@@ -45,7 +45,7 @@ class AppElement extends LitElement {
       }
 
       this.ws.on('message', (message: Message) => {
-        this.events = [...this.events, { type: 'message', message }]
+        this.events = [...this.events, { type: 'message', message, username: null }]
       })
 
       this.ws.on('read-message', ({ id }) => {
@@ -56,19 +56,21 @@ class AppElement extends LitElement {
         })
       })
 
-      this.ws.on('user-leave', ({ user }: { user: string }) => {
-        this.recepients = this.recepients.filter(recepient => recepient.username !== user)
-        this.events = [...this.events, { type: 'user-leave', user }]
+      this.ws.on('user-leave', ({ username }: { username: string }) => {
+        this.recepients = this.recepients.filter(recepient => recepient.username !== username)
+        this.events = [...this.events, { type: 'user-leave', username }]
       })
 
-      this.ws.on('user-join', ({ user }: { user: string }) => {
-        this.recepients = [...this.recepients, new Recepient({ username: user })]
-        this.events = [...this.events, { type: 'user-join', user }]
-        this.ws.emit('unread-messages-count', { user: user }, ({ unreadMessageCount }: { unreadMessageCount: number }) => {
-          const recepient = this.recepients.find(recepient => recepient.username === user)
-          if (!recepient) return
-          recepient.unreadMessagesCount = unreadMessageCount
+      this.ws.on('user-join', ({ username }: { username: string }) => {
+        this.recepients = [...this.recepients, new Recepient({ username, unreadMessagesCount: -1 })]
+        this.events = [...this.events, { type: 'user-join', username }]
+        this.ws.emit('unread-messages-count', { username }, ({ unreadMessagesCount }: { unreadMessagesCount: number }) => {
+          this.recepients = this.recepients.map(recepient => recepient.username === username ? new Recepient({ ...recepient, unreadMessagesCount }) : recepient)
         })
+      })
+
+      this.ws.on('unread-messages-count', ({ username, unreadMessagesCount }: { username: string, unreadMessagesCount: number }) => {
+        this.recepients = this.recepients.map(recepient => recepient.username === username ? new Recepient({ ...recepient, unreadMessagesCount }) : recepient)
       })
     })
 
@@ -125,7 +127,7 @@ class AppElement extends LitElement {
 
   sendMessage(message: string) {
     this.ws.emit('send-message', { message, recepient: this.recepient.username }, ({ message }: { message: Message }) => {
-      this.events = [...this.events, { type: 'message', message }]
+      this.events = [...this.events, { type: 'message', message, username: null }]
     })
   }
 
@@ -160,8 +162,9 @@ class AppElement extends LitElement {
 
   private registerRecepient(recepient: Recepient) {
     this.recepient = recepient
+    this.events = []
     this.ws.emit('fetch', { recepient: recepient.username }, ({ messages }: { messages: Message[] }) => {
-      this.events = this.events.concat(messages.map(message => ({ type: 'message', message }))).reverse()
+      this.events = this.events.concat(messages.map(message => ({ type: 'message', message, username: null }))).reverse()
     })
   }
 }
