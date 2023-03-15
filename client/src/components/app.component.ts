@@ -1,5 +1,5 @@
 import Message from '../utils/Message'
-import ChatUIElement, { IReadMessageEvent, ISendMessageEvent } from './ChatUI'
+import ChatUIElement, { IReadMessageEvent, ISendMessageEvent } from './chat-ui.component'
 import './lobby-ui.component'
 import './user-details-modal.component'
 import './chat-ui.component'
@@ -9,8 +9,11 @@ import { LitElement, html } from 'lit'
 import { query, customElement, state } from 'lit/decorators.js'
 import TEvent from '../utils/Event'
 import Recepient from '../utils/Recepient'
-import { IUserRegistrationEvent } from './UserDetailsModal'
-import { IRegisterRecepientEvent } from './LobbyUI'
+import { IUserRegistrationEvent } from './user-details-modal.component'
+import { IRegisterRecepientEvent } from './lobby-ui.component'
+import {WebSocketMessage} from '../../../server/src/services/websocket.service'
+
+console.log(WebSocketMessage)
 
 @customElement('ws-app')
 class AppElement extends LitElement {
