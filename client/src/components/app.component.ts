@@ -47,11 +47,11 @@ class AppElement extends LitElement {
         this.registerUsername(this.username)
       }
 
-      this.ws.on('message', (message: Message) => {
+      this.ws.on(WebSocketMessage.CHAT, (message: Message) => {
         this.events = [...this.events, { type: 'message', message, username: null }]
       })
 
-      this.ws.on('read-message', ({ id }) => {
+      this.ws.on(WebSocketMessage.READ_CHAT, ({ id }) => {
         this.events = this.events.map(event => {
           if (event.type === 'message' && event.message?.id === id)
             return Object.assign(event, { message: { ...event.message, has_read: true } })
@@ -59,20 +59,20 @@ class AppElement extends LitElement {
         })
       })
 
-      this.ws.on('user-leave', ({ username }: { username: string }) => {
+      this.ws.on(WebSocketMessage.USER_LEAVE, ({ username }: { username: string }) => {
         this.recepients = this.recepients.filter(recepient => recepient.username !== username)
         this.events = [...this.events, { type: 'user-leave', username }]
       })
 
-      this.ws.on('user-join', ({ username }: { username: string }) => {
+      this.ws.on(WebSocketMessage.USER_JOIN, ({ username }: { username: string }) => {
         this.recepients = [...this.recepients, new Recepient({ username, unreadMessagesCount: -1 })]
         this.events = [...this.events, { type: 'user-join', username }]
-        this.ws.emit('unread-messages-count', { username }, ({ unreadMessagesCount }: { unreadMessagesCount: number }) => {
+        this.ws.emit(WebSocketMessage.FETCH_UNREAD_CHATS_COUNT, { username }, ({ unreadMessagesCount }: { unreadMessagesCount: number }) => {
           this.recepients = this.recepients.map(recepient => recepient.username === username ? new Recepient({ ...recepient, unreadMessagesCount }) : recepient)
         })
       })
 
-      this.ws.on('unread-messages-count', ({ username, unreadMessagesCount }: { username: string, unreadMessagesCount: number }) => {
+      this.ws.on(WebSocketMessage.UNREAD_CHATS_COUNT, ({ username, unreadMessagesCount }: { username: string, unreadMessagesCount: number }) => {
         this.recepients = this.recepients.map(recepient => recepient.username === username ? new Recepient({ ...recepient, unreadMessagesCount }) : recepient)
       })
     })
@@ -129,13 +129,13 @@ class AppElement extends LitElement {
   }
 
   sendMessage(message: string) {
-    this.ws.emit('send-message', { message, recepient: this.recepient.username }, ({ message }: { message: Message }) => {
+    this.ws.emit(WebSocketMessage.SEND_CHAT, { message, recepient: this.recepient.username }, ({ message }: { message: Message }) => {
       this.events = [...this.events, { type: 'message', message, username: null }]
     })
   }
 
   readMessage(message: Message) {
-    this.ws.emit('read-message', { id: message.id }, () => {
+    this.ws.emit(WebSocketMessage.READ_CHAT, { id: message.id }, () => {
       this.events = this.events.map((event) => {
         if (!(event.type === 'message') || !event.message) return event
         if (!(event.message.id === message.id)) return event
@@ -157,7 +157,7 @@ class AppElement extends LitElement {
     window.sessionStorage.setItem('username', username)
 
     this.ws.emit('register', { username }, () => {
-      this.ws.emit('fetch-users', {}, ({ users }: { users: Recepient[] }) => {
+      this.ws.emit(WebSocketMessage.FETCH_USERS, {}, ({ users }: { users: Recepient[] }) => {
         this.recepients = users.filter(user => user.username !== this.username).map(user => new Recepient(user))
       })
     })
@@ -166,7 +166,7 @@ class AppElement extends LitElement {
   private registerRecepient(recepient: Recepient) {
     this.recepient = recepient
     this.events = []
-    this.ws.emit('fetch', { recepient: recepient.username }, ({ messages }: { messages: Message[] }) => {
+    this.ws.emit(WebSocketMessage.FETCH_CHATS_WITH_USER, { recepient: recepient.username }, ({ messages }: { messages: Message[] }) => {
       this.events = this.events.concat(messages.map(message => ({ type: 'message', message, username: null }))).reverse()
     })
   }
