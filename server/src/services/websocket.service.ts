@@ -16,6 +16,18 @@ interface IUserDetails {
   username: string
 }
 
+export enum WebSocketMessage {
+  FETCH_USERS = "fetch-users",
+  FETCH_CHATS_WITH_USER = "fetch-chats-with-user",
+  FETCH_UNREAD_CHATS_COUNT = "fetch-unread-chats-count",
+  UNREAD_CHATS_COUNT = "unread-chats-count",
+  READ_CHAT = "read-chat",
+  CHAT = "chat",
+  SEND_CHAT = "send-chat",
+  USER_JOIN = "user-join",
+  USER_LEAVE = "user-leave"
+}
+
 const users: IUserDetails[] = []
 
 const getUserBySid = (sid: string) => {
@@ -40,7 +52,7 @@ const getUnreadMessagesBetween = async ({ sender, recepient }: { sender: string,
 
 export default (server: http.Server) => {
   const io = new Server(server, {
-    path: '/chat',
+    path: '/ws',
     cors: {
       origin: 'http://localhost:3000',
       methods: ['GET', 'POST']
@@ -57,7 +69,7 @@ export default (server: http.Server) => {
       if (getUserByUsername(username)) return false
 
       users.forEach((user) => {
-        io.to(user.sid).emit('user-join', { username })
+        io.to(user.sid).emit(WebSocketMessage.USER_JOIN, { username })
       })
 
       logger.info(`${socket.id} registered as ${username}`)
@@ -67,7 +79,7 @@ export default (server: http.Server) => {
       cb()
     })
 
-    socket.on('fetch-users', async (_, cb) => {
+    socket.on(WebSocketMessage.FETCH_USERS, async (_, cb) => {
       const sender = getUserBySid(socket.id)
 
       if (!sender) return false
@@ -81,7 +93,7 @@ export default (server: http.Server) => {
       })
     })
 
-    socket.on('unread-messages-count', async ({ username }: { username: string }, cb) => {
+    socket.on(WebSocketMessage.FETCH_UNREAD_CHATS_COUNT, async ({ username }: { username: string }, cb) => {
       const sender = getUserBySid(socket.id)
       const recepient = getUserByUsername(username)
 
@@ -92,7 +104,7 @@ export default (server: http.Server) => {
       cb({ unreadMessagesCount })
     })
 
-    socket.on('fetch', async ({ recepient }: { recepient: string }, cb) => {
+    socket.on(WebSocketMessage.FETCH_CHATS_WITH_USER, async ({ recepient }: { recepient: string }, cb) => {
       const sender = getUserBySid(socket.id)
 
       if (!sender) return false
@@ -115,7 +127,7 @@ export default (server: http.Server) => {
     })
 
     socket.on(
-      'send-message',
+      WebSocketMessage.SEND_CHAT,
       async ({ recepient, message }: { recepient: string; message: string }, cb) => {
         const receiver = getUserByUsername(recepient)
         const sender = getUserBySid(socket.id)
@@ -136,14 +148,14 @@ export default (server: http.Server) => {
           }
         })
 
-        io.to(receiver.sid).emit('message', messageObject)
-        io.to(receiver.sid).emit('unread-messages-count', { username: receiver.username, unreadMessagesCount: await getUnreadMessagesBetween({ sender: sender.username, recepient: receiver.username }) })
+        io.to(receiver.sid).emit(WebSocketMessage.CHAT, messageObject)
+        io.to(receiver.sid).emit(WebSocketMessage.UNREAD_CHATS_COUNT, { username: receiver.username, unreadMessagesCount: await getUnreadMessagesBetween({ sender: sender.username, recepient: receiver.username }) })
         cb({ message: messageObject })
       }
     )
 
     socket.on(
-      'read-message',
+      WebSocketMessage.READ_CHAT,
       async ({ id: messageId }: { id: string }, cb) => {
         const id = parseInt(messageId)
         const sender = getUserBySid(socket.id)
@@ -171,7 +183,7 @@ export default (server: http.Server) => {
         })
 
         if (receiver)
-          io.to(receiver.sid).emit('read-message', { id: message.id })
+          io.to(receiver.sid).emit(WebSocketMessage.READ_CHAT, { id: message.id })
         cb()
       }
     )
@@ -184,7 +196,7 @@ export default (server: http.Server) => {
 
       users.forEach((user, index) => {
         if (user.sid === socket.id) users.splice(index, 1)
-        else io.to(user.sid).emit('user-leave', { username: sender.username })
+        else io.to(user.sid).emit(WebSocketMessage.USER_LEAVE, { username: sender.username })
       })
     })
   })

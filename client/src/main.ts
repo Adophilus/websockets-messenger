@@ -1,2 +1,2 @@
 import './main.css'
-import './components/App'
+import './components/app.component'
