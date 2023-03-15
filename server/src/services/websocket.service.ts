@@ -2,33 +2,10 @@ import { Server } from 'socket.io'
 import { Logger } from 'tslog'
 import http from 'http'
 import { prisma } from './database.service'
+import { TUserDetails, WebSocketMessage } from '../types'
 
-interface IMessage {
-  sender: string
-  recepient: string
-  message: string
-  image: string
-  has_read: boolean
-}
 
-interface IUserDetails {
-  sid: string
-  username: string
-}
-
-export enum WebSocketMessage {
-  FETCH_USERS = "fetch-users",
-  FETCH_CHATS_WITH_USER = "fetch-chats-with-user",
-  FETCH_UNREAD_CHATS_COUNT = "fetch-unread-chats-count",
-  UNREAD_CHATS_COUNT = "unread-chats-count",
-  READ_CHAT = "read-chat",
-  CHAT = "chat",
-  SEND_CHAT = "send-chat",
-  USER_JOIN = "user-join",
-  USER_LEAVE = "user-leave"
-}
-
-const users: IUserDetails[] = []
+const users: TUserDetails[] = []
 
 const getUserBySid = (sid: string) => {
   return users.find((user) => user.sid === sid)
@@ -61,7 +38,7 @@ export default (server: http.Server) => {
   const logger = new Logger()
 
   io.on('connection', (socket) => {
-    let userDetails: IUserDetails
+    let userDetails: TUserDetails
 
     logger.info(`New connection from ${socket.id}`)
 
