@@ -11,7 +11,7 @@ import TEvent from '../utils/Event'
 import Recepient from '../utils/Recepient'
 import { IUserRegistrationEvent } from './user-details-modal.component'
 import { IRegisterRecepientEvent } from './lobby-ui.component'
-import {WebSocketMessage} from '../../../server/src/services/websocket.service'
+import {WebSocketMessage} from '../../../server/src/types'
 
 console.log(WebSocketMessage)
 
