@@ -15,7 +15,6 @@
     "noImplicitReturns": true,
     "skipLibCheck": true,
     "experimentalDecorators": true,
-    "useDefineForClassFields": false
   },
   "include": ["src"]
 }
