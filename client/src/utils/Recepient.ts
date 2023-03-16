@@ -1,15 +1,15 @@
 type TProps = {
   username: string
-  unreadMessagesCount: number
+  unreadChatsCount: number
 }
 
 class Recepient {
   declare username: string
-  unreadMessagesCount: number = 0
+  unreadChatsCount: number = 0
 
-  constructor({ username, unreadMessagesCount }: TProps) {
+  constructor({ username, unreadChatsCount }: TProps) {
     this.username = username
-    this.unreadMessagesCount = unreadMessagesCount
+    this.unreadChatsCount = unreadChatsCount
   }
 }
 

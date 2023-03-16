@@ -98,16 +98,16 @@ class AppElement extends LitElement {
   }
 
   sendMessage(message: string) {
-    this.ws.emit(WebSocketMessage.SEND_CHAT, { message, recepient: this.recepient.username }, ({ message }: { message: Message }) => {
-      this.events = [...this.events, { type: 'message', message, username: null }]
+    this.ws.emit(WebSocketMessage.SEND_CHAT, { message, user: this.recepient.username }, ({ chat }: { chat: Message }) => {
+      this.events = [...this.events, { type: 'message', message: chat, username: null }]
     })
   }
 
-  readMessage(message: Message) {
-    this.ws.emit(WebSocketMessage.READ_CHAT, { id: message.id }, () => {
+  readMessage(chat: Message) {
+    this.ws.emit(WebSocketMessage.READ_CHAT, { id: chat.id }, () => {
       this.events = this.events.map((event) => {
         if (!(event.type === 'message') || !event.message) return event
-        if (!(event.message.id === message.id)) return event
+        if (!(event.message.id === chat.id)) return event
         return {
           ...event,
           message: {
@@ -128,8 +128,8 @@ class AppElement extends LitElement {
   private registerRecepient(recepient: Recepient) {
     this.recepient = recepient
     this.events = []
-    this.ws.emit(WebSocketMessage.FETCH_CHATS_WITH_USER, { recepient: recepient.username }, ({ messages }: { messages: Message[] }) => {
-      this.events = this.events.concat(messages.map(message => ({ type: 'message', message, username: null }))).reverse()
+    this.ws.emit(WebSocketMessage.FETCH_CONVERSATION_WITH_USER, { user: recepient.username }, ({ chats }: { chats: Message[] }) => {
+      this.events = this.events.concat(chats.map(message => ({ type: 'message', message, username: null }))).reverse()
     })
   }
 
@@ -148,11 +148,11 @@ class AppElement extends LitElement {
         this.recepients = users.filter(user => user.username !== this.username).map(user => new Recepient(user))
       })
 
-      this.ws.on(WebSocketMessage.CHAT, (message: Message) => {
-        this.events = [...this.events, { type: 'message', message, username: null }]
+      this.ws.on(WebSocketMessage.CHAT, ({ chat }: { chat: Message }) => {
+        this.events = [...this.events, { type: 'message', message: chat, username: null }]
       })
 
-      this.ws.on(WebSocketMessage.READ_CHAT, ({ id }) => {
+      this.ws.on(WebSocketMessage.READ_CHAT, ({ id }: { id: number }) => {
         this.events = this.events.map(event => {
           if (event.type === 'message' && event.message?.id === id)
             return Object.assign(event, { message: { ...event.message, has_read: true } })
@@ -160,21 +160,22 @@ class AppElement extends LitElement {
         })
       })
 
-      this.ws.on(WebSocketMessage.USER_LEAVE, ({ username }: { username: string }) => {
-        this.recepients = this.recepients.filter(recepient => recepient.username !== username)
-        this.events = [...this.events, { type: 'user-leave', username }]
+      this.ws.on(WebSocketMessage.USER_LEAVE, ({ user }: { user: string }) => {
+        this.recepients = this.recepients.filter(recepient => recepient.username !== user)
+        this.events = [...this.events, { type: 'user-leave', username: user }]
       })
 
-      this.ws.on(WebSocketMessage.USER_JOIN, ({ username }: { username: string }) => {
-        this.recepients = [...this.recepients, new Recepient({ username, unreadMessagesCount: -1 })]
-        this.events = [...this.events, { type: 'user-join', username }]
-        this.ws.emit(WebSocketMessage.FETCH_UNREAD_CHATS_COUNT, { username }, ({ unreadMessagesCount }: { unreadMessagesCount: number }) => {
-          this.recepients = this.recepients.map(recepient => recepient.username === username ? new Recepient({ ...recepient, unreadMessagesCount }) : recepient)
+      this.ws.on(WebSocketMessage.USER_JOIN, ({ user }: { user: string }) => {
+        this.recepients = [...this.recepients, new Recepient({ username: user, unreadChatsCount: -1 })]
+        this.events = [...this.events, { type: 'user-join', username: user }]
+
+        this.ws.emit(WebSocketMessage.FETCH_UNREAD_CHATS_COUNT, { user }, ({ unreadChatsCount }: { unreadChatsCount: number }) => {
+          this.recepients = this.recepients.map(recepient => recepient.username === user ? new Recepient({ ...recepient, unreadChatsCount: unreadChatsCount }) : recepient)
         })
       })
 
-      this.ws.on(WebSocketMessage.UNREAD_CHATS_COUNT, ({ username, unreadMessagesCount }: { username: string, unreadMessagesCount: number }) => {
-        this.recepients = this.recepients.map(recepient => recepient.username === username ? new Recepient({ ...recepient, unreadMessagesCount }) : recepient)
+      this.ws.on(WebSocketMessage.UNREAD_CHATS_COUNT, ({ user, unreadChatsCount }: { user: string, unreadChatsCount: number }) => {
+        this.recepients = this.recepients.map(recepient => recepient.username === user ? new Recepient({ ...recepient, unreadChatsCount: unreadChatsCount }) : recepient)
       })
     })
 

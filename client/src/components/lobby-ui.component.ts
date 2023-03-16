@@ -55,9 +55,9 @@ class LobbyUIElement extends LitElement {
         <span>
           ${_.escape(recepient.username)}
         </span>
-        ${recepient.unreadMessagesCount > 0 ? html`
+        ${recepient.unreadChatsCount > 0 ? html`
           <span class="inline-flex items-center justify-center px-2 py-1 mr-2 text-xs font-bold leading-none text-red-100 bg-red-600 rounded-full">
-            ${recepient.unreadMessagesCount}
+            ${recepient.unreadChatsCount}
           </span>
           `: null}
         </a>
