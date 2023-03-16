@@ -9,7 +9,7 @@ import { LitElement, html } from 'lit'
 import { query, customElement, state } from 'lit/decorators.js'
 import TEvent from '../utils/Event'
 import Recepient from '../utils/Recepient'
-import { IUserRegistrationEvent } from './user-details-modal.component'
+import { TLoginEvent } from './user-details-modal.component'
 import { IRegisterRecepientEvent } from './lobby-ui.component'
 import { WebSocketMessage } from '../../../server/src/types'
 
@@ -37,58 +37,14 @@ class AppElement extends LitElement {
 
   constructor() {
     super()
-    this.ws = io('/', { path: '/chat' })
     this.setAttribute("class", "flex flex-col w-full px-4 mx-auto mt-8 md:mt-12 max-w-xl gap-y-4")
-    this.ws.on('connect', () => {
-
-      if (this.username) {
-        this.registerUsername(this.username)
-      }
-
-      this.ws.on(WebSocketMessage.CHAT, (message: Message) => {
-        this.events = [...this.events, { type: 'message', message, username: null }]
-      })
-
-      this.ws.on(WebSocketMessage.READ_CHAT, ({ id }) => {
-        this.events = this.events.map(event => {
-          if (event.type === 'message' && event.message?.id === id)
-            return Object.assign(event, { message: { ...event.message, has_read: true } })
-          return event
-        })
-      })
-
-      this.ws.on(WebSocketMessage.USER_LEAVE, ({ username }: { username: string }) => {
-        this.recepients = this.recepients.filter(recepient => recepient.username !== username)
-        this.events = [...this.events, { type: 'user-leave', username }]
-      })
-
-      this.ws.on(WebSocketMessage.USER_JOIN, ({ username }: { username: string }) => {
-        this.recepients = [...this.recepients, new Recepient({ username, unreadMessagesCount: -1 })]
-        this.events = [...this.events, { type: 'user-join', username }]
-        this.ws.emit(WebSocketMessage.FETCH_UNREAD_CHATS_COUNT, { username }, ({ unreadMessagesCount }: { unreadMessagesCount: number }) => {
-          this.recepients = this.recepients.map(recepient => recepient.username === username ? new Recepient({ ...recepient, unreadMessagesCount }) : recepient)
-        })
-      })
-
-      this.ws.on(WebSocketMessage.UNREAD_CHATS_COUNT, ({ username, unreadMessagesCount }: { username: string, unreadMessagesCount: number }) => {
-        this.recepients = this.recepients.map(recepient => recepient.username === username ? new Recepient({ ...recepient, unreadMessagesCount }) : recepient)
-      })
-    })
-
-    this.ws.on('disconnect', () => {
-      this.errors.push('Network connection lost. Reconnecting...')
-    })
   }
 
   get registrationTemplate() {
     if (this.username) return ''
 
     return html`
-      <ws-user-details-modal @register="${(ev: CustomEvent<IUserRegistrationEvent>) => {
-        const { username } = ev.detail
-
-        this.registerUsername(username)
-      }}"></ws-user-details-modal>
+      <ws-user-details-modal @register="${this.onLogin}"></ws-user-details-modal>
     `
   }
 
@@ -154,10 +110,8 @@ class AppElement extends LitElement {
     this.username = username
     window.sessionStorage.setItem('username', username)
 
-    this.ws.emit('register', { username }, () => {
-      this.ws.emit(WebSocketMessage.FETCH_USERS, {}, ({ users }: { users: Recepient[] }) => {
-        this.recepients = users.filter(user => user.username !== this.username).map(user => new Recepient(user))
-      })
+    this.ws.emit(WebSocketMessage.FETCH_USERS, {}, ({ users }: { users: Recepient[] }) => {
+      this.recepients = users.filter(user => user.username !== this.username).map(user => new Recepient(user))
     })
   }
 
@@ -167,6 +121,57 @@ class AppElement extends LitElement {
     this.ws.emit(WebSocketMessage.FETCH_CHATS_WITH_USER, { recepient: recepient.username }, ({ messages }: { messages: Message[] }) => {
       this.events = this.events.concat(messages.map(message => ({ type: 'message', message, username: null }))).reverse()
     })
+  }
+
+  private persistToken(token: string) {
+    window.localStorage.setItem("token", token)
+  }
+
+  private connectToWebsocket(token: string) {
+    this.ws = io('/', { path: '/chat' })
+    this.ws.on('connect', () => {
+
+      this.ws.on(WebSocketMessage.CHAT, (message: Message) => {
+        this.events = [...this.events, { type: 'message', message, username: null }]
+      })
+
+      this.ws.on(WebSocketMessage.READ_CHAT, ({ id }) => {
+        this.events = this.events.map(event => {
+          if (event.type === 'message' && event.message?.id === id)
+            return Object.assign(event, { message: { ...event.message, has_read: true } })
+          return event
+        })
+      })
+
+      this.ws.on(WebSocketMessage.USER_LEAVE, ({ username }: { username: string }) => {
+        this.recepients = this.recepients.filter(recepient => recepient.username !== username)
+        this.events = [...this.events, { type: 'user-leave', username }]
+      })
+
+      this.ws.on(WebSocketMessage.USER_JOIN, ({ username }: { username: string }) => {
+        this.recepients = [...this.recepients, new Recepient({ username, unreadMessagesCount: -1 })]
+        this.events = [...this.events, { type: 'user-join', username }]
+        this.ws.emit(WebSocketMessage.FETCH_UNREAD_CHATS_COUNT, { username }, ({ unreadMessagesCount }: { unreadMessagesCount: number }) => {
+          this.recepients = this.recepients.map(recepient => recepient.username === username ? new Recepient({ ...recepient, unreadMessagesCount }) : recepient)
+        })
+      })
+
+      this.ws.on(WebSocketMessage.UNREAD_CHATS_COUNT, ({ username, unreadMessagesCount }: { username: string, unreadMessagesCount: number }) => {
+        this.recepients = this.recepients.map(recepient => recepient.username === username ? new Recepient({ ...recepient, unreadMessagesCount }) : recepient)
+      })
+    })
+
+    this.ws.on('disconnect', () => {
+      this.errors.push('Network connection lost. Reconnecting...')
+    })
+  }
+
+  private onLogin(ev: CustomEvent<TLoginEvent>) {
+    const { username, token } = ev.detail
+
+    this.registerUsername(username)
+    this.persistToken(token)
+    this.connectToWebsocket(token)
   }
 }
 
