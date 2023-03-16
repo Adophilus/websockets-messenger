@@ -8,7 +8,7 @@ export async function register(req: Request, res: Response) {
   const { username, password } = req.body
 
   const duplicate = await prisma.user.findFirst({ where: { username } })
-  if (duplicate) return res.sendStatus(StatusCodes.CONFLICT)
+  if (duplicate) return res.status(StatusCodes.CONFLICT).send({ error: StatusCodes.CONFLICT })
 
   try {
     const user = await prisma.user.create({
