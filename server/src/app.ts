@@ -1,3 +1,6 @@
+import * as dotenv from 'dotenv'
+dotenv.config()
+
 import path from 'path'
 import express from 'express'
 import cors from 'cors'
@@ -9,7 +12,7 @@ import config from './config'
 import WebSocketService from './services/websocket.service'
 import DatabaseService from './services/database.service'
 import LoggerMiddleware from './middleware/logger.middleware'
-import Router from './router'
+import router from './router'
 import { TLog } from './types'
 
 const app = express()
@@ -18,12 +21,13 @@ const logger = new Logger<TLog>()
 
 app.use(express.static(path.resolve('../client/build')))
 app.use(cors())
-app.use(morgan('combined'))
 app.use(bodyParser.urlencoded({ extended: true }))
+app.use(express.json())
 app.use(LoggerMiddleware(logger))
+app.use('/api', morgan('combined'))
+app.use('/api', router)
 
 const io = WebSocketService(server)
-Router(app)
 
 const start = async () => {
   try {
