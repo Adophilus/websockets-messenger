@@ -3,8 +3,8 @@ import { customElement, property } from 'lit/decorators.js'
 
 @customElement('ws-error-modal')
 class ErrorModalElement extends LitElement {
-  declare private _modalClose: HTMLButtonElement
-  declare private _modalTextElement: HTMLSpanElement
+  declare private modalClose: HTMLButtonElement
+  declare private modalTextElement: HTMLSpanElement
 
   @property()
   message = 'An error occurred!'
