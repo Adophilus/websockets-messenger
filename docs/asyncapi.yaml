@@ -15,12 +15,12 @@ channels:
     subscribe:
       message:
         oneOf:
-          - $ref: '#/components/messages/fetch-messages'
+          - $ref: '#/components/messages/fetch-users'
 
 components:
   messages:
-    fetch-messages:
-      summary: list of `TMessage` sent from the server
+    fetch-users:
+      summary: list of usernames sent from the server
       payload:
         type: array
         items:
