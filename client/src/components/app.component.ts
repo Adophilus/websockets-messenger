@@ -12,16 +12,28 @@ import Recepient from '../utils/Recepient'
 import { TLoginEvent } from './user-details-modal.component'
 import { IRegisterRecepientEvent } from './lobby-ui.component'
 import { WebSocketMessage } from '../../../server/src/types'
+import { Router } from '@lit-labs/router'
 
 @customElement('ws-app')
 class AppElement extends LitElement {
+  private router = new Router(this, [
+    { path: '/' },
+    { path: '/register', render: () => this.registrationTemplate, enter: async () => { await import('./user-details-modal.component'); return true } },
+    { path: '/chat', render: () => this.chatUITemplate, enter: async () => { await import('./chat-ui.component'); return true } },
+    { path: '/lobby', render: () => this.lobbyUITemplate, enter: async () => { await import('./lobby-ui.component'); return true } },
+  ]);
+
   declare private ws
+
 
   @query('ws-chat-ui')
   declare chatUIElement: ChatUIElement
 
   @state()
-  username = window.sessionStorage.getItem('username')
+  declare username: string
+
+  @state()
+  token = window.localStorage.getItem("token")
 
   @state()
   declare recepient: Recepient
@@ -38,13 +50,16 @@ class AppElement extends LitElement {
   constructor() {
     super()
     this.setAttribute("class", "flex flex-col w-full px-4 mx-auto mt-8 md:mt-12 max-w-xl gap-y-4")
+
+    if (this.token)
+      this.connectToWebsocket()
   }
 
   get registrationTemplate() {
     if (this.username) return ''
 
     return html`
-      <ws-user-details-modal @register="${this.onLogin}"></ws-user-details-modal>
+      <ws-user-details-modal @login="${this.onLogin}"></ws-user-details-modal>
     `
   }
 
@@ -108,11 +123,6 @@ class AppElement extends LitElement {
 
   private registerUsername(username: string) {
     this.username = username
-    window.sessionStorage.setItem('username', username)
-
-    this.ws.emit(WebSocketMessage.FETCH_USERS, {}, ({ users }: { users: Recepient[] }) => {
-      this.recepients = users.filter(user => user.username !== this.username).map(user => new Recepient(user))
-    })
   }
 
   private registerRecepient(recepient: Recepient) {
@@ -123,13 +133,20 @@ class AppElement extends LitElement {
     })
   }
 
-  private persistToken(token: string) {
+  private registerToken(token: string) {
     window.localStorage.setItem("token", token)
+    this.token = token
   }
 
-  private connectToWebsocket(token: string) {
-    this.ws = io('/', { path: '/chat' })
+  private connectToWebsocket() {
+    this.ws = io('/', { path: '/ws' })
+
     this.ws.on('connect', () => {
+      this.router.goto('/lobby')
+
+      this.ws.emit(WebSocketMessage.FETCH_USERS, {}, ({ users }: { users: Recepient[] }) => {
+        this.recepients = users.filter(user => user.username !== this.username).map(user => new Recepient(user))
+      })
 
       this.ws.on(WebSocketMessage.CHAT, (message: Message) => {
         this.events = [...this.events, { type: 'message', message, username: null }]
@@ -170,8 +187,8 @@ class AppElement extends LitElement {
     const { username, token } = ev.detail
 
     this.registerUsername(username)
-    this.persistToken(token)
-    this.connectToWebsocket(token)
+    this.registerToken(token)
+    this.connectToWebsocket()
   }
 }
 
