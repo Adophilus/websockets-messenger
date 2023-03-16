@@ -46,7 +46,7 @@ class ChatUIElement extends LitElement {
   }
 
   readMessage(message: Message) {
-    if (message.recepient !== this.username)
+    if (message.recipient !== this.username)
       return
     if (message.has_read)
       return
