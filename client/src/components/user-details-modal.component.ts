@@ -44,13 +44,14 @@ class UserDetailsModalElement extends LitElement {
       </div>
       <div class="flex gap-x-2">
         <button type="submit" class="grow text-white bg-indigo-500 border-0 py-2 px-8 hover:bg-indigo-600 rounded text-lg">
-          <input class="peer" type="checkbox" id="loginOrRegister" />
-          <span class="peer-checked:hidden">Login<span>
+          <input class="peer appearance-none" type="checkbox" id="loginOrRegister" />
+          <span class="peer-checked:hidden">Login</span>
+          <span class="hidden peer-checked:inline">Register</span>
         </button>
         <label for="loginOrRegister" class="inline-flex items-center">
-          <button class="p-2 w-12 h-12 rounded-full cursor-pointer bg-indigo-500 transition-transform ease-in-out duration-150 hover:bg-indigo-600 focus:rotate-180">
-            <img class="filter invert" src="${RefreshSvg}" />
-          </button>
+          <span role="button" style="pointer-events: fill" class="p-2 w-12 h-12 rounded-full cursor-pointer bg-indigo-500 transition-transform ease-in-out duration-150 hover:bg-indigo-600 hover:rotate-180">
+            <img class="filter invert select-none" src="${RefreshSvg}" />
+          </span>
         </label>
       </div>
     </form>
@@ -63,9 +64,9 @@ class UserDetailsModalElement extends LitElement {
     const password = this.passwordInput.value
     const loginOrRegister = this.loginOrRegister.checked
 
-    let endpoint = '/auth/login'
+    let endpoint = '/api/auth/login'
     if (loginOrRegister)
-      endpoint = '/auth/register'
+      endpoint = '/api/auth/register'
 
     const res = await fetch(endpoint, {
       method: "POST",
@@ -75,6 +76,7 @@ class UserDetailsModalElement extends LitElement {
       })
     })
     const json = await res.json()
+    console.log(json)
     const token = json.token
     if (res.status === StatusCodes.OK)
       this.dispatchEvent(

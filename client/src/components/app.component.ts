@@ -4,16 +4,14 @@ import './lobby-ui.component'
 import './user-details-modal.component'
 import './chat-ui.component'
 import { io } from 'socket.io-client'
-import './ErrorModal'
+import './error-modal.component'
 import { LitElement, html } from 'lit'
 import { query, customElement, state } from 'lit/decorators.js'
 import TEvent from '../utils/Event'
 import Recepient from '../utils/Recepient'
 import { IUserRegistrationEvent } from './user-details-modal.component'
 import { IRegisterRecepientEvent } from './lobby-ui.component'
-import {WebSocketMessage} from '../../../server/src/types'
-
-console.log(WebSocketMessage)
+import { WebSocketMessage } from '../../../server/src/types'
 
 @customElement('ws-app')
 class AppElement extends LitElement {
