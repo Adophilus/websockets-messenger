@@ -11,12 +11,14 @@ export async function register(req: Request, res: Response) {
   if (duplicate) return res.sendStatus(StatusCodes.CONFLICT)
 
   try {
-    await prisma.user.create({
+    const user = await prisma.user.create({
       data: {
         username,
         password
       }
     })
+
+    res.locals.logger.info(`new account created for '${user.username}'`)
 
     return res
       .status(StatusCodes.CREATED)
@@ -32,6 +34,8 @@ export async function login(req: Request, res: Response) {
 
   if (!user || !AuthService.verifyUserPassword(user, password))
     return res.sendStatus(StatusCodes.UNAUTHORIZED)
+
+  res.locals.logger.info(`'${user.username}' just logged in!`)
 
   return res.json({
     token: TokenService.generateToken(user),

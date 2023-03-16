@@ -1,3 +1,7 @@
+export type TLog = {
+  message: string
+}
+
 export type TUserDetails = {
   sid: string
   username: string
