@@ -1,3 +1,3 @@
 export default {
-  token: process.env.TOKEN_SECRET ?? '',
+  tokenSecret: process.env.JWT_TOKEN_SECRET ?? '',
 }
