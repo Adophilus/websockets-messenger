@@ -7,7 +7,7 @@ class SuccessModalElement extends LitElement {
   declare private modalTextElement: HTMLSpanElement
 
   @property()
-  message = 'An success occurgreen!'
+  message = 'success!'
 
   constructor() {
     super()
