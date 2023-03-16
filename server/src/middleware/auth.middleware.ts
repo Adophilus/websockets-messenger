@@ -1,13 +1,20 @@
+import { NextFunction, Request, Response } from 'express'
 import { checkSchema } from 'express-validator'
 import { validationFunction } from '../utils/validation.util'
 
 export const register = [
+  (req: Request, res: Response, next: NextFunction) => {
+    res.locals.logger.info(req.body)
+    next()
+  },
   checkSchema({
     username: {
-      in: ['body']
+      in: ['body'],
+      isString: true
     },
     password: {
-      in: ['body']
+      in: ['body'],
+      isString: true
     }
   }),
   validationFunction
@@ -16,10 +23,12 @@ export const register = [
 export const login = [
   checkSchema({
     username: {
-      in: ['body']
+      in: ['body'],
+      isString: true
     },
     password: {
-      in: ['body']
+      in: ['body'],
+      isString: true
     }
   }),
   validationFunction
