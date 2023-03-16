@@ -42,15 +42,15 @@ export default (server: http.Server) => {
 
     logger.info(`New connection from ${socket.id}`)
 
-    socket.on('register', ({ username }: { username: string }, cb) => {
-      if (getUserByUsername(username)) return false
+    socket.on('register', ({ user }: { user: string }, cb) => {
+      if (getUserByUsername(user)) return false
 
       users.forEach((user) => {
-        io.to(user.sid).emit(WebSocketMessage.USER_JOIN, { username })
+        io.to(user.sid).emit(WebSocketMessage.USER_JOIN, { user: user.username })
       })
 
-      logger.info(`${socket.id} registered as ${username}`)
-      userDetails = { username, sid: socket.id }
+      logger.info(`${socket.id} registered as ${user}`)
+      userDetails = { username: user, sid: socket.id }
       users.push(userDetails)
 
       cb()
@@ -65,33 +65,34 @@ export default (server: http.Server) => {
       cb({
         users: await Promise.all(users.map(async (user) => ({
           username: user.username,
-          unreadMessagesCount: await getUnreadMessagesBetween({ sender: user.username, recipient: sender.username })
+          unreadChatsCount: await getUnreadMessagesBetween({ sender: user.username, recipient: sender.username })
         })))
       })
     })
 
-    socket.on(WebSocketMessage.FETCH_UNREAD_CHATS_COUNT, async ({ username }: { username: string }, cb) => {
+    socket.on(WebSocketMessage.FETCH_UNREAD_CHATS_COUNT, async ({ user }: { user: string }, cb) => {
       const sender = getUserBySid(socket.id)
-      const recipient = getUserByUsername(username)
+      const recipient = getUserByUsername(user)
 
       if (!sender || !recipient) return false
       logger.info(`${sender.sid}:${sender.username} wishes to retrieve the number of unread messages with ${recipient.sid}:${recipient.username}`)
 
-      const unreadMessagesCount = await getUnreadMessagesBetween({ sender: recipient.username, recipient: sender.username })
-      cb({ unreadMessagesCount })
+      const unreadChatsCount = await getUnreadMessagesBetween({ sender: recipient.username, recipient: sender.username })
+      cb({ unreadChatsCount })
     })
 
-    socket.on(WebSocketMessage.FETCH_CHATS_WITH_USER, async ({ recipient }: { recipient: string }, cb) => {
+    socket.on(WebSocketMessage.FETCH_CONVERSATION_WITH_USER, async ({ user }: { user: string }, cb) => {
       const sender = getUserBySid(socket.id)
+      const conversationLength = 50 // TODO: implement logic for getting last ${conversationLength} conversations
 
       if (!sender) return false
-      logger.info(`${sender.sid}:${sender.username} wishes to retrieve all messages with ${recipient}`)
+      logger.info(`${sender.sid}:${sender.username} wishes to retrieve last ${conversationLength} conversation with ${user}`)
 
-      const messages = await prisma.message.findMany({
+      const chats = await prisma.message.findMany({
         where: {
           OR: [
-            { AND: [{ senderUsername: sender.username }, { recipientUsername: recipient }] },
-            { AND: [{ senderUsername: recipient }, { recipientUsername: sender.username }] }
+            { AND: [{ senderUsername: sender.username }, { recipientUsername: user }] },
+            { AND: [{ senderUsername: user }, { recipientUsername: sender.username }] }
           ]
         },
         take: 50,
@@ -100,13 +101,13 @@ export default (server: http.Server) => {
         }
       })
 
-      cb({ messages })
+      cb({ chats })
     })
 
     socket.on(
       WebSocketMessage.SEND_CHAT,
-      async ({ recipient, message }: { recipient: string; message: string }, cb) => {
-        const receiver = getUserByUsername(recipient)
+      async ({ user, message }: { user: string; message: string }, cb) => {
+        const receiver = getUserByUsername(user)
         const sender = getUserBySid(socket.id)
 
         if (!receiver || !sender) return false
@@ -115,27 +116,27 @@ export default (server: http.Server) => {
           `received new messge from ${sender.sid}:${userDetails.username} -> ${receiver.sid}:${receiver.username}: '${message}'`
         )
 
-        const messageObject = await prisma.message.create({
+        const chat = await prisma.message.create({
           data: {
-            recipientUsername: recipient,
+            recipientUsername: user,
             senderUsername: sender.username,
             message,
             has_read: false
           }
         })
 
-        io.to(receiver.sid).emit(WebSocketMessage.CHAT, messageObject)
-        io.to(receiver.sid).emit(WebSocketMessage.UNREAD_CHATS_COUNT, { username: receiver.username, unreadMessagesCount: await getUnreadMessagesBetween({ sender: sender.username, recipient: receiver.username }) })
-        cb({ message: messageObject })
+        io.to(receiver.sid).emit(WebSocketMessage.CHAT, { chat })
+        io.to(receiver.sid).emit(WebSocketMessage.UNREAD_CHATS_COUNT, { user: receiver.username, unreadChatsCount: await getUnreadMessagesBetween({ sender: sender.username, recipient: receiver.username }) })
+        cb({ chat })
       }
     )
 
     socket.on(
       WebSocketMessage.READ_CHAT,
-      async ({ id: messageId }: { id: string }, cb) => {
-        const id = parseInt(messageId)
+      async ({ id: chatId }: { id: string }, cb) => {
+        const id = parseInt(chatId)
         const sender = getUserBySid(socket.id)
-        const message = await prisma.message.findFirst({
+        const chat = await prisma.message.findFirst({
           where: {
             id
           },
@@ -144,13 +145,13 @@ export default (server: http.Server) => {
             recipient: true
           }
         })
-        if (!sender || !message) return
-        if (message.recipientUsername !== sender.username) return
+        if (!sender || !chat) return
+        if (chat.recipientUsername !== sender.username) return
 
-        const receiver = getUserByUsername(message.senderUsername)
+        const receiver = getUserByUsername(chat.senderUsername)
 
         logger.info(
-          `${sender.sid}:${userDetails.username} -> has read message '${message.id}:${message.message}'`
+          `${sender.sid}:${userDetails.username} -> has read message '${chat.id}:${chat.message}'`
         )
 
         await prisma.message.update({
@@ -163,7 +164,7 @@ export default (server: http.Server) => {
         })
 
         if (receiver)
-          io.to(receiver.sid).emit(WebSocketMessage.READ_CHAT, { id: message.id })
+          io.to(receiver.sid).emit(WebSocketMessage.READ_CHAT, { id: chat.id, user: sender.username })
         cb()
       }
     )
@@ -176,7 +177,7 @@ export default (server: http.Server) => {
 
       users.forEach((user, index) => {
         if (user.sid === socket.id) users.splice(index, 1)
-        else io.to(user.sid).emit(WebSocketMessage.USER_LEAVE, { username: sender.username })
+        else io.to(user.sid).emit(WebSocketMessage.USER_LEAVE, { user: sender.username })
       })
     })
   })
