@@ -3,13 +3,14 @@ import { query, customElement } from 'lit/decorators.js'
 import { StatusCodes } from 'http-status-codes'
 import RefreshSvg from '../assets/refresh.svg'
 
-export interface IUserRegistrationEvent {
-  username: string
+export type TLoginEvent = {
+  username: string,
+  token: string
 }
 
 declare global {
   interface ElementEventMap {
-    register: CustomEvent<IUserRegistrationEvent>
+    login: CustomEvent<TLoginEvent>
   }
 }
 
@@ -69,6 +70,9 @@ class UserDetailsModalElement extends LitElement {
       endpoint = '/api/auth/register'
 
     const res = await fetch(endpoint, {
+      headers: {
+        "Content-Type": "application/json"
+      },
       method: "POST",
       body: JSON.stringify({
         username,
