@@ -9,9 +9,6 @@
     "start": "cd server && pnpm start"
   },
   "keywords": [],
-  "author": "",
+  "author": "Adophilus",
   "license": "ISC",
-  "dependencies": {
-    "@asyncapi/generator": "^1.9.17"
-  }
 }
