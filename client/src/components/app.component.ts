@@ -3,7 +3,7 @@ import ChatUIElement, { IReadMessageEvent, ISendMessageEvent } from './chat-ui.c
 import './lobby-ui.component'
 import './user-details-modal.component'
 import './chat-ui.component'
-import { io } from 'socket.io-client'
+import { io, Manager } from 'socket.io-client'
 import './error-modal.component'
 import { LitElement, html } from 'lit'
 import { query, customElement, state } from 'lit/decorators.js'
@@ -22,6 +22,7 @@ class AppElement extends LitElement {
     { path: '/chat', render: () => this.chatUITemplate, enter: async () => { await import('./chat-ui.component'); return true } },
     { path: '/lobby', render: () => this.lobbyUITemplate, enter: async () => { await import('./lobby-ui.component'); return true } },
   ]);
+  private wsManager = new Manager("/ws")
 
   declare private ws
 
@@ -139,7 +140,7 @@ class AppElement extends LitElement {
   }
 
   private connectToWebsocket() {
-    this.ws = io('/', { path: '/ws', auth: { token: this.token } })
+    this.ws = this.wsManager.socket('/chat', { auth: { token: this.token } })
 
     this.ws.on('connect', () => {
       this.router.goto('/lobby')
