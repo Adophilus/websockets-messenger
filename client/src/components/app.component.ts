@@ -139,7 +139,7 @@ class AppElement extends LitElement {
   }
 
   private connectToWebsocket() {
-    this.ws = io('/', { path: '/ws' })
+    this.ws = io('/', { path: '/ws', auth: { token: this.token } })
 
     this.ws.on('connect', () => {
       this.router.goto('/lobby')
