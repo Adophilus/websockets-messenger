@@ -8,7 +8,7 @@ function generateToken(user: User) {
   })
 }
 
-async function verifyToken(token: string) {
+function verifyToken(token: string) {
   return jwt.verify(token, config.jwt.tokenSecret)
 }
 
