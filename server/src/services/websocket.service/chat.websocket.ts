@@ -29,17 +29,18 @@ const getUnreadMessagesBetween = async ({ sender, recipient }: { sender: string,
 export default (io: Namespace, parentLogger: Logger<ILogObj>) => {
   const logger = parentLogger.getSubLogger({ name: 'ChatWebSocketLogger' })
 
+  io.use((socket, next) => {
+    if (TokenService.verifyToken(socket.handshake.auth.token))
+      return next()
+    logger.info(`${socket.id} failed the authentication stage!`)
+    socket.disconnect()
+  })
+
   io.on('connection', (socket) => {
     let userDetails: TUserDetails
 
     logger.info(`New connection from ${socket.id}`)
     logger.info(`Socket handshake: ${socket.handshake}`)
-
-    if (!TokenService.verifyToken(socket.handshake.token)) {
-      logger.info(`${socket.id} failed the authentication stage!`)
-      socket.disconnect()
-      return
-    }
 
     logger.info(`${socket.id} passed the authentication stage!`)
 
