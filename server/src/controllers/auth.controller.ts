@@ -1,5 +1,5 @@
-import * as TokenService from '../services/token.service'
-import * as AuthService from '../services/auth.service'
+import TokenService from '../services/token.service'
+import AuthService from '../services/auth.service'
 import { prisma } from '../services/database.service'
 import { ReasonPhrases, StatusCodes } from 'http-status-codes'
 import { Request, Response } from 'express'

@@ -6,18 +6,17 @@ import express from 'express'
 import cors from 'cors'
 import morgan from 'morgan'
 import bodyParser from 'body-parser'
-import { Logger } from 'tslog'
+import { ILogObj, Logger } from 'tslog'
 import http from 'http'
 import config from './config'
 import WebSocketService from './services/websocket.service'
 import DatabaseService from './services/database.service'
 import LoggerMiddleware from './middleware/logger.middleware'
 import router from './router'
-import { TLog } from './types'
 
 const app = express()
 const server = http.createServer(app)
-const logger = new Logger<TLog>()
+const logger = new Logger<ILogObj>()
 
 app.use(express.static(path.resolve('../client/build')))
 app.use(cors())
@@ -27,7 +26,7 @@ app.use(LoggerMiddleware(logger))
 app.use('/api', morgan('combined'))
 app.use('/api', router)
 
-const io = WebSocketService(server)
+const io = WebSocketService(server, logger)
 
 const start = async () => {
   try {

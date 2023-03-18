@@ -1,8 +1,7 @@
 import { NextFunction, Request, Response } from 'express'
-import { Logger } from 'tslog'
-import { TLog } from '../types'
+import { ILogObj, Logger } from 'tslog'
 
-export default function(appLogger: Logger<TLog>) {
+export default function(appLogger: Logger<ILogObj>) {
   const logger = appLogger.getSubLogger({ name: 'LoggerMiddleware' })
 
   return (req: Request, res: Response, next: NextFunction) => {

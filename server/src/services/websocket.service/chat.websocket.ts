@@ -1,9 +1,8 @@
-import { Server } from 'socket.io'
-import { Logger } from 'tslog'
-import http from 'http'
-import { prisma } from './database.service'
-import { TUserDetails, WebSocketMessage } from '../types'
-
+import { Namespace } from 'socket.io'
+import { ILogObj, Logger } from 'tslog'
+import { prisma } from '../database.service'
+import { TUserDetails, WebSocketMessage } from '../../types'
+import TokenService from '../token.service'
 
 const users: TUserDetails[] = []
 
@@ -27,20 +26,22 @@ const getUnreadMessagesBetween = async ({ sender, recipient }: { sender: string,
   return aggregation._count
 }
 
-export default (server: http.Server) => {
-  const io = new Server(server, {
-    path: '/ws',
-    cors: {
-      origin: 'http://localhost:3000',
-      methods: ['GET', 'POST']
-    }
-  })
-  const logger = new Logger()
+export default (io: Namespace, parentLogger: Logger<ILogObj>) => {
+  const logger = parentLogger.getSubLogger({ name: 'ChatWebSocketLogger' })
 
   io.on('connection', (socket) => {
     let userDetails: TUserDetails
 
     logger.info(`New connection from ${socket.id}`)
+    logger.info(`Socket handshake: ${socket.handshake}`)
+
+    if (!TokenService.verifyToken(socket.handshake.token)) {
+      logger.info(`${socket.id} failed the authentication stage!`)
+      socket.disconnect()
+      return
+    }
+
+    logger.info(`${socket.id} passed the authentication stage!`)
 
     socket.on('register', ({ user }: { user: string }, cb) => {
       if (getUserByUsername(user)) return false
