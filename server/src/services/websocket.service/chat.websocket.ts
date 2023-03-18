@@ -30,6 +30,7 @@ export default (io: Namespace, parentLogger: Logger<ILogObj>) => {
   const logger = parentLogger.getSubLogger({ name: 'ChatWebSocketLogger' })
 
   io.use((socket, next) => {
+    logger.info(`Auth token of ${socket.id}: ${socket.handshake.auth.token}`)
     if (TokenService.verifyToken(socket.handshake.auth.token))
       return next()
     logger.info(`${socket.id} failed the authentication stage!`)
