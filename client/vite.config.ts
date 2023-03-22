@@ -11,7 +11,7 @@ export default defineConfig(({ mode }) => {
     },
     server: {
       proxy: {
-        '/chat': {
+        '/ws': {
           target: websocketURI,
           ws: true
         },

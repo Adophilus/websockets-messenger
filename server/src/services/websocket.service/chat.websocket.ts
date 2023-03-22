@@ -41,7 +41,8 @@ export default (io: Namespace, parentLogger: Logger<ILogObj>) => {
     let userDetails: TUserDetails
 
     logger.info(`New connection from ${socket.id}`)
-    logger.info(`Socket handshake: ${socket.handshake}`)
+    logger.info(`Socket handshake:`)
+    logger.info(socket.handshake)
 
     logger.info(`${socket.id} passed the authentication stage!`)
 

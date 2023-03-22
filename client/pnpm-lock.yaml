@@ -5,6 +5,7 @@ specifiers:
   '@types/lodash': ^4.14.191
   autoprefixer: ^10.4.13
   http-status-codes: ^2.2.0
+  jwt-decode: ^3.1.2
   lit: ^2.6.1
   lodash: ^4.17.21
   postcss: ^8.4.21
@@ -19,6 +20,7 @@ specifiers:
 
 dependencies:
   http-status-codes: 2.2.0
+  jwt-decode: 3.1.2
   lit: 2.6.1
   lodash: 4.17.21
   socket.io-client: 4.6.1
@@ -576,6 +578,10 @@ packages:
     resolution: {integrity: sha512-41Cifkg6e8TylSpdtTpeLVMqvSBEVzTttHvERD741+pnZ8ANv0004MRL43QKPDlK9cGvNp6NZWZUBlbGXYxxng==}
     engines: {node: '>=0.12.0'}
     dev: true
+
+  /jwt-decode/3.1.2:
+    resolution: {integrity: sha512-UfpWE/VZn0iP50d8cz9NrZLM9lSWhcJ+0Gt/nm4by88UL+J1SiKN8/5dkjMmbEzwL2CAe+67GsegCbIKtbp75A==}
+    dev: false
 
   /lilconfig/2.0.6:
     resolution: {integrity: sha512-9JROoBW7pobfsx+Sq2JsASvCo6Pfo6WWoUW79HuB1BCoBXD4PLWJPqDF6fNj67pqBYTbAHkE57M1kS/+L1neOg==}

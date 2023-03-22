@@ -13,16 +13,15 @@ import { TLoginEvent } from './user-details-modal.component'
 import { IRegisterRecepientEvent } from './lobby-ui.component'
 import { WebSocketMessage } from '../../../server/src/types'
 import { Router } from '@lit-labs/router'
+import JwtDecode from 'jwt-decode'
+import { TToken } from '../utils/Jwt'
 
 @customElement('ws-app')
 class AppElement extends LitElement {
-  private router = new Router(this, [
-    { path: '/' },
-    { path: '/register', render: () => this.registrationTemplate, enter: async () => { await import('./user-details-modal.component'); return true } },
-    { path: '/chat', render: () => this.chatUITemplate, enter: async () => { await import('./chat-ui.component'); return true } },
-    { path: '/lobby', render: () => this.lobbyUITemplate, enter: async () => { await import('./lobby-ui.component'); return true } },
-  ]);
-  private wsManager = new Manager("/ws")
+  private router: Router
+  private wsManager = new Manager(import.meta.env.VITE_WEBSOCKET_URI, {
+    path: '/ws'
+  })
 
   declare private ws
 
@@ -52,13 +51,15 @@ class AppElement extends LitElement {
     super()
     this.setAttribute("class", "flex flex-col w-full px-4 mx-auto mt-8 md:mt-12 max-w-xl gap-y-4")
 
-    if (this.token)
-      this.connectToWebsocket()
+    this.router = new Router(this, [
+      { path: '/' },
+      { path: '/register', render: () => this.registrationTemplate, enter: async () => { await import('./user-details-modal.component'); return true } },
+      { path: '/chat', render: () => this.chatUITemplate, enter: async () => { await import('./chat-ui.component'); return true } },
+      { path: '/lobby', render: () => this.lobbyUITemplate, enter: async () => { await import('./lobby-ui.component'); return true } },
+    ])
   }
 
   get registrationTemplate() {
-    if (this.username) return ''
-
     return html`
       <ws-user-details-modal @login="${this.onLogin}"></ws-user-details-modal>
     `
@@ -73,8 +74,6 @@ class AppElement extends LitElement {
   }
 
   get chatUITemplate() {
-    if (!this.username || !this.recepient) return ''
-
     return html`<ws-chat-ui username="${this.username}"
       .recepient="${this.recepient}"
       .events="${this.events}"
@@ -83,19 +82,35 @@ class AppElement extends LitElement {
   }
 
   get lobbyUITemplate() {
-    if (!this.username || this.recepient) return ''
-
     return html`<ws-lobby-ui
       @recepient="${(ev: CustomEvent<IRegisterRecepientEvent>) => this.registerRecepient(ev.detail.recepient)}"
       .recepients="${this.recepients}"></ws-lobby-ui>`
   }
 
+  firstUpdated(changedProperties): void {
+    super.firstUpdated(changedProperties)
+
+    if (this.token) {
+      this.username = JwtDecode<TToken>(this.token).username
+      this.connectToWebsocket()
+      this.router.goto('/lobby')
+    }
+    else
+      this.router.goto('/register')
+  }
+
   render() {
+    console.log('rendered!')
     return html`
     ${this.errorModalTemplate}
-    ${this.chatUITemplate}
-    ${this.lobbyUITemplate}
-    ${this.registrationTemplate}`
+    ${this.router.outlet()}
+    `
+
+    // return html`
+    // ${this.errorModalTemplate}
+    // ${this.chatUITemplate}
+    // ${this.lobbyUITemplate}
+    // ${this.registrationTemplate}`
   }
 
   sendMessage(message: string) {
@@ -143,7 +158,7 @@ class AppElement extends LitElement {
     this.ws = this.wsManager.socket('/chat', { auth: { token: this.token } })
 
     this.ws.on('connect', () => {
-      this.router.goto('/lobby')
+      console.warn("connected!!!")
 
       this.ws.emit(WebSocketMessage.FETCH_USERS, {}, ({ users }: { users: Recepient[] }) => {
         this.recepients = users.filter(user => user.username !== this.username).map(user => new Recepient(user))
@@ -191,6 +206,7 @@ class AppElement extends LitElement {
     this.registerUsername(username)
     this.registerToken(token)
     this.connectToWebsocket()
+    this.router.goto('/lobby')
   }
 }
 
