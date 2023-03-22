@@ -11,7 +11,7 @@ export interface IRegisterRecepientEvent {
 
 declare global {
   interface ElementEventMap {
-    'recepient': CustomEvent<IRegisterRecepientEvent>
+    'select-recepient': CustomEvent<IRegisterRecepientEvent>
   }
 }
 
@@ -46,7 +46,7 @@ class LobbyUIElement extends LitElement {
       <a @click="${(ev: MouseEvent) => {
         ev.preventDefault()
         this.dispatchEvent(
-          new CustomEvent('recepient', {
+          new CustomEvent<IRegisterRecepientEvent>('select-recepient', {
             detail: { recepient }
           })
         )

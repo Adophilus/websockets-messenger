@@ -3,6 +3,10 @@ export type TUserDetails = {
   username: string
 }
 
+export type TToken = {
+  username: string
+}
+
 export type TChat = {
   sender: string,
   recipient: string,

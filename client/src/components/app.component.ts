@@ -3,7 +3,7 @@ import ChatUIElement, { IReadMessageEvent, ISendMessageEvent } from './chat-ui.c
 import './lobby-ui.component'
 import './user-details-modal.component'
 import './chat-ui.component'
-import { io, Manager } from 'socket.io-client'
+import { Manager } from 'socket.io-client'
 import './error-modal.component'
 import { LitElement, html } from 'lit'
 import { query, customElement, state } from 'lit/decorators.js'
@@ -14,7 +14,7 @@ import { IRegisterRecepientEvent } from './lobby-ui.component'
 import { WebSocketMessage } from '../../../server/src/types'
 import { Router } from '@lit-labs/router'
 import JwtDecode from 'jwt-decode'
-import { TToken } from '../utils/Jwt'
+import { TToken } from '../../../server/src/types'
 
 @customElement('ws-app')
 class AppElement extends LitElement {
@@ -83,7 +83,10 @@ class AppElement extends LitElement {
 
   get lobbyUITemplate() {
     return html`<ws-lobby-ui
-      @recepient="${(ev: CustomEvent<IRegisterRecepientEvent>) => this.registerRecepient(ev.detail.recepient)}"
+      @select-recepient="${(ev: CustomEvent<IRegisterRecepientEvent>) => {
+        this.registerRecepient(ev.detail.recepient)
+        this.router.goto('/chat')
+      }}"
       .recepients="${this.recepients}"></ws-lobby-ui>`
   }
 

@@ -3,6 +3,7 @@ import { ILogObj, Logger } from 'tslog'
 import { prisma } from '../database.service'
 import { TUserDetails, WebSocketMessage } from '../../types'
 import TokenService from '../token.service'
+import { TToken } from '../../types'
 
 const users: TUserDetails[] = []
 
@@ -26,51 +27,48 @@ const getUnreadMessagesBetween = async ({ sender, recipient }: { sender: string,
   return aggregation._count
 }
 
+class UserDetails {
+  declare public username: string
+  declare public sid: string
+
+  constructor({ username, sid }: { username: string, sid: string }) {
+    this.username = username
+    this.sid = sid
+  }
+
+  toString() {
+    return `{${this.username}}`
+  }
+}
+
 export default (io: Namespace, parentLogger: Logger<ILogObj>) => {
   const logger = parentLogger.getSubLogger({ name: 'ChatWebSocketLogger' })
 
-  io.use((socket, next) => {
-    logger.info(`Auth token of ${socket.id}: ${socket.handshake.auth.token}`)
-    if (TokenService.verifyToken(socket.handshake.auth.token))
-      return next()
-    logger.info(`${socket.id} failed the authentication stage!`)
-    socket.disconnect()
-  })
-
   io.on('connection', (socket) => {
-    let userDetails: TUserDetails
+    const decodedToken = TokenService.verifyToken(socket.handshake.auth.token) as TToken
 
-    logger.info(`New connection from ${socket.id}`)
-    logger.info(`Socket handshake:`)
-    logger.info(socket.handshake)
-
-    logger.info(`${socket.id} passed the authentication stage!`)
-
-    socket.on('register', ({ user }: { user: string }, cb) => {
-      if (getUserByUsername(user)) return false
-
-      users.forEach((user) => {
-        io.to(user.sid).emit(WebSocketMessage.USER_JOIN, { user: user.username })
-      })
-
-      logger.info(`${socket.id} registered as ${user}`)
-      userDetails = { username: user, sid: socket.id }
-      users.push(userDetails)
-
-      cb()
+    let userDetails = new UserDetails({
+      username: decodedToken.username,
+      sid: socket.id
     })
 
-    socket.on(WebSocketMessage.FETCH_USERS, async (_, cb) => {
-      const sender = getUserBySid(socket.id)
+    logger.info(`${socket.id} registered as ${userDetails.username}`)
 
-      if (!sender) return false
-      logger.info(`${sender.sid}:${sender.username} wishes to retrieve all online users`)
+    users.forEach((user) => {
+      if (user.username === userDetails.username) return
+      io.to(user.sid).emit(WebSocketMessage.USER_JOIN, { user: user.username })
+    })
+    users.push(userDetails)
+
+    socket.on(WebSocketMessage.FETCH_USERS, async (_, cb) => {
+      logger.info(`${userDetails} wishes to retrieve all online users`)
 
       cb({
-        users: await Promise.all(users.map(async (user) => ({
-          username: user.username,
-          unreadChatsCount: await getUnreadMessagesBetween({ sender: user.username, recipient: sender.username })
-        })))
+        users: await Promise.all(users.filter(user => user.username !== userDetails.username)
+          .map(async (user) => ({
+            username: user.username,
+            unreadChatsCount: await getUnreadMessagesBetween({ sender: user.username, recipient: userDetails.username })
+          })))
       })
     })
 
@@ -79,7 +77,7 @@ export default (io: Namespace, parentLogger: Logger<ILogObj>) => {
       const recipient = getUserByUsername(user)
 
       if (!sender || !recipient) return false
-      logger.info(`${sender.sid}:${sender.username} wishes to retrieve the number of unread messages with ${recipient.sid}:${recipient.username}`)
+      logger.info(`${userDetails} wishes to retrieve the number of unread messages with ${recipient.sid}:${recipient.username}`)
 
       const unreadChatsCount = await getUnreadMessagesBetween({ sender: recipient.username, recipient: sender.username })
       cb({ unreadChatsCount })
@@ -174,14 +172,13 @@ export default (io: Namespace, parentLogger: Logger<ILogObj>) => {
     )
 
     socket.on('disconnect', () => {
-      const sender = getUserBySid(socket.id)
-      if (!sender) return false
-
-      logger.info(`${sender.sid}:${sender.username} has disconnected`)
+      logger.info(`${userDetails} has disconnected`)
 
       users.forEach((user, index) => {
+        if (user.username === userDetails.username) return
+
         if (user.sid === socket.id) users.splice(index, 1)
-        else io.to(user.sid).emit(WebSocketMessage.USER_LEAVE, { user: sender.username })
+        else io.to(user.sid).emit(WebSocketMessage.USER_LEAVE, { user: userDetails.username })
       })
     })
   })
