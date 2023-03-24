@@ -3,12 +3,12 @@ import ChatUIElement, { IReadMessageEvent, ISendMessageEvent } from './chat-ui.c
 import './lobby-ui.component'
 import './user-details-modal.component'
 import './chat-ui.component'
-import { Manager } from 'socket.io-client'
+import { Manager, Socket } from 'socket.io-client'
 import './error-modal.component'
 import { LitElement, html } from 'lit'
 import { query, customElement, state } from 'lit/decorators.js'
 import TEvent from '../utils/Event'
-import Recepient from '../utils/Recepient'
+import Recipient from '../utils/Recepient'
 import { TLoginEvent } from './user-details-modal.component'
 import { IRegisterRecepientEvent } from './lobby-ui.component'
 import { WebSocketMessage } from '../../../server/src/types'
@@ -19,12 +19,11 @@ import { TToken } from '../../../server/src/types'
 @customElement('ws-app')
 class AppElement extends LitElement {
   private router: Router
-  private wsManager = new Manager(import.meta.env.VITE_WEBSOCKET_URI, {
+  private wsManager = new Manager('', {
     path: '/ws'
   })
 
-  declare private ws
-
+  declare private ws: Socket
 
   @query('ws-chat-ui')
   declare chatUIElement: ChatUIElement
@@ -36,10 +35,10 @@ class AppElement extends LitElement {
   token = window.localStorage.getItem("token")
 
   @state()
-  declare recepient: Recepient
+  declare recepient: Recipient
 
   @state()
-  recepients: Recepient[] = []
+  recepients: Recipient[] = []
 
   @state()
   errors: string[] = []
@@ -144,7 +143,7 @@ class AppElement extends LitElement {
     this.username = username
   }
 
-  private registerRecepient(recepient: Recepient) {
+  private registerRecepient(recepient: Recipient) {
     this.recepient = recepient
     this.events = []
     this.ws.emit(WebSocketMessage.FETCH_CONVERSATION_WITH_USER, { user: recepient.username }, ({ chats }: { chats: Message[] }) => {
@@ -161,10 +160,9 @@ class AppElement extends LitElement {
     this.ws = this.wsManager.socket('/chat', { auth: { token: this.token } })
 
     this.ws.on('connect', () => {
-      console.warn("connected!!!")
-
-      this.ws.emit(WebSocketMessage.FETCH_USERS, {}, ({ users }: { users: Recepient[] }) => {
-        this.recepients = users.filter(user => user.username !== this.username).map(user => new Recepient(user))
+      this.ws.emit(WebSocketMessage.FETCH_USERS, {}, ({ users }: { users: Recipient[] }) => {
+        console.log(users)
+        this.recepients = users.map(user => new Recipient(user))
       })
 
       this.ws.on(WebSocketMessage.CHAT, ({ chat }: { chat: Message }) => {
@@ -185,16 +183,17 @@ class AppElement extends LitElement {
       })
 
       this.ws.on(WebSocketMessage.USER_JOIN, ({ user }: { user: string }) => {
-        this.recepients = [...this.recepients, new Recepient({ username: user, unreadChatsCount: -1 })]
+        console.log(`New user ${user} has joined!`)
+        this.recepients = this.recepients.filter(recepient => recepient.username !== user).concat(new Recipient({ username: user, unreadChatsCount: -1 }))
         this.events = [...this.events, { type: 'user-join', username: user }]
 
         this.ws.emit(WebSocketMessage.FETCH_UNREAD_CHATS_COUNT, { user }, ({ unreadChatsCount }: { unreadChatsCount: number }) => {
-          this.recepients = this.recepients.map(recepient => recepient.username === user ? new Recepient({ ...recepient, unreadChatsCount: unreadChatsCount }) : recepient)
+          this.recepients = this.recepients.map(recepient => recepient.username === user ? new Recipient({ ...recepient, unreadChatsCount }) : recepient)
         })
       })
 
       this.ws.on(WebSocketMessage.UNREAD_CHATS_COUNT, ({ user, unreadChatsCount }: { user: string, unreadChatsCount: number }) => {
-        this.recepients = this.recepients.map(recepient => recepient.username === user ? new Recepient({ ...recepient, unreadChatsCount: unreadChatsCount }) : recepient)
+        this.recepients = this.recepients.map(recepient => recepient.username === user ? new Recipient({ ...recepient, unreadChatsCount }) : recepient)
       })
     })
 

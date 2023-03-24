@@ -2,11 +2,11 @@ import _ from 'lodash'
 import { LitElement, html } from 'lit'
 import { customElement, property } from 'lit/decorators.js'
 import { repeat } from 'lit/directives/repeat.js'
-import Recepient from '../utils/Recepient'
+import Recipient from '../utils/Recepient'
 
 
 export interface IRegisterRecepientEvent {
-  recepient: Recepient
+  recepient: Recipient
 }
 
 declare global {
@@ -20,7 +20,7 @@ const sectionClassName = 'bg-gray-100 shadow-lg p-2 md:p-4 lg:px-8'
 @customElement('ws-lobby-ui')
 class LobbyUIElement extends LitElement {
   @property()
-  recepients: Recepient[] = []
+  recepients: Recipient[] = []
 
   constructor() {
     super()
@@ -33,14 +33,14 @@ class LobbyUIElement extends LitElement {
       <h3 class="text-xl">Lobby</h3>
     </section>
     <section class="${sectionClassName}">
-      <div class="divide-y p-2">${this.recepients.length === 0 ? html`No one is online 🙁` : repeat(this.recepients, (recepient: Recepient) => recepient.username, (recepient: Recepient) => this.recepientElementTemplate(recepient))}</div>
+      <div class="divide-y p-2">${this.recepients.length === 0 ? html`No one is online 🙁` : repeat(this.recepients, (recepient: Recipient) => recepient.username, (recepient: Recipient) => this.recepientElementTemplate(recepient))}</div>
     </section>
     `
   }
 
   createRenderRoot() { return this }
 
-  recepientElementTemplate(recepient: Recepient) {
+  recepientElementTemplate(recepient: Recipient) {
     return html`<div>
     <p>
       <a @click="${(ev: MouseEvent) => {

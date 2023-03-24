@@ -4,7 +4,7 @@ import { query, customElement, property, state } from 'lit/decorators.js'
 import { repeat } from 'lit/directives/repeat.js'
 import Message from '../utils/Message'
 import TEvent, { TEventType } from '../utils/Event'
-import Recepient from '../utils/Recepient'
+import Recipient from '../utils/Recepient'
 
 export interface ISendMessageEvent {
   message: string
@@ -28,6 +28,9 @@ class ChatUIElement extends LitElement {
   @query('#message')
   declare messageInput: HTMLInputElement
 
+  @query('#fileInput')
+  declare fileInput: HTMLInputElement
+
   @property()
   events: TEvent[] = []
 
@@ -35,7 +38,7 @@ class ChatUIElement extends LitElement {
   username = ''
 
   @property()
-  declare recepient: Recepient
+  declare recepient: Recipient
 
   @state()
   isRecepientOnline = true
@@ -111,12 +114,18 @@ class ChatUIElement extends LitElement {
         this.messageInput.value = ''
       }}">
         <div class="flex">
+          <button type="button" @click="${this.selectFile}" class="text-white bg-indigo-500 border-0 py-2 px-8 focus:outline-none hover:bg-indigo-600 rounded text-lg"><i class="fa-solid fa-paperclip text-4xl"></i></button>
           <input type="text" id="message" name="message" class="w-full bg-white rounded border border-gray-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 text-base outline-none text-gray-700 py-1 px-3 leading-8 transition-colors duration-200 ease-in-out">
-          <button type="submit" class="text-white bg-indigo-500 border-0 py-2 px-8 focus:outline-none hover:bg-indigo-600 rounded text-lg">Send</button>
+          <button type="submit" class="text-white bg-indigo-500 border-0 py-2 px-8 focus:outline-none hover:bg-indigo-600 rounded text-lg"><i class="fa-solid fa-paper-plane-top text-4xl"></i></button>
         </div>
+        <input type="file" id="fileInput" class="appearance-none" />
       </form>
     </section>
     `
+  }
+
+  selectFile() {
+    this.fileInput.click()
   }
 
   determineIfRecepientIsOnline(event: TEvent) {

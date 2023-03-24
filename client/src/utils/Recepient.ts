@@ -3,7 +3,7 @@ type TProps = {
   unreadChatsCount: number
 }
 
-class Recepient {
+class Recipient {
   declare username: string
   unreadChatsCount: number = 0
 
@@ -13,4 +13,4 @@ class Recepient {
   }
 }
 
-export default Recepient
+export default Recipient
