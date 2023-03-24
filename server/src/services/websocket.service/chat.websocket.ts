@@ -5,7 +5,7 @@ import { TUserDetails, WebSocketMessage } from '../../types'
 import TokenService from '../token.service'
 import { TToken } from '../../types'
 
-const users: TUserDetails[] = []
+let users: TUserDetails[] = []
 
 const getUserBySid = (sid: string) => {
   return users.find((user) => user.sid === sid)
@@ -45,7 +45,9 @@ export default (io: Namespace, parentLogger: Logger<ILogObj>) => {
   const logger = parentLogger.getSubLogger({ name: 'ChatWebSocketLogger' })
 
   io.on('connection', (socket) => {
-    const decodedToken = TokenService.verifyToken(socket.handshake.auth.token) as TToken
+    const decodedToken = TokenService.verifyToken(socket.handshake.auth.token)
+    if (!decodedToken)
+      return
 
     let userDetails = new UserDetails({
       username: decodedToken.username,
@@ -54,14 +56,15 @@ export default (io: Namespace, parentLogger: Logger<ILogObj>) => {
 
     logger.info(`${socket.id} registered as ${userDetails.username}`)
 
-    users.forEach((user) => {
-      if (user.username === userDetails.username) return
-      io.to(user.sid).emit(WebSocketMessage.USER_JOIN, { user: user.username })
-    })
+    const userAlreadyJoined = users.find(user => user.username === userDetails.username)
+    if (userAlreadyJoined)
+      return socket.disconnect(true)
+
+    users.forEach((user) => io.to(user.sid).emit(WebSocketMessage.USER_JOIN, { user: userDetails.username }))
     users.push(userDetails)
 
     socket.on(WebSocketMessage.FETCH_USERS, async (_, cb) => {
-      logger.info(`${userDetails} wishes to retrieve all online users`)
+      logger.trace(`${userDetails} wishes to retrieve all online users`)
 
       cb({
         users: await Promise.all(users.filter(user => user.username !== userDetails.username)
@@ -73,28 +76,22 @@ export default (io: Namespace, parentLogger: Logger<ILogObj>) => {
     })
 
     socket.on(WebSocketMessage.FETCH_UNREAD_CHATS_COUNT, async ({ user }: { user: string }, cb) => {
-      const sender = getUserBySid(socket.id)
-      const recipient = getUserByUsername(user)
+      logger.trace(`${userDetails} wishes to retrieve the number of unread messages with ${user}`)
 
-      if (!sender || !recipient) return false
-      logger.info(`${userDetails} wishes to retrieve the number of unread messages with ${recipient.sid}:${recipient.username}`)
-
-      const unreadChatsCount = await getUnreadMessagesBetween({ sender: recipient.username, recipient: sender.username })
+      const unreadChatsCount = await getUnreadMessagesBetween({ sender: user, recipient: userDetails.username })
       cb({ unreadChatsCount })
     })
 
     socket.on(WebSocketMessage.FETCH_CONVERSATION_WITH_USER, async ({ user }: { user: string }, cb) => {
-      const sender = getUserBySid(socket.id)
       const conversationLength = 50 // TODO: implement logic for getting last ${conversationLength} conversations
 
-      if (!sender) return false
-      logger.info(`${sender.sid}:${sender.username} wishes to retrieve last ${conversationLength} conversation with ${user}`)
+      logger.trace(`${userDetails} wishes to retrieve last ${conversationLength} conversation with ${user}`)
 
       const chats = await prisma.message.findMany({
         where: {
           OR: [
-            { AND: [{ senderUsername: sender.username }, { recipientUsername: user }] },
-            { AND: [{ senderUsername: user }, { recipientUsername: sender.username }] }
+            { AND: [{ senderUsername: userDetails.username }, { recipientUsername: user }] },
+            { AND: [{ senderUsername: user }, { recipientUsername: userDetails.username }] }
           ]
         },
         take: 50,
@@ -109,27 +106,26 @@ export default (io: Namespace, parentLogger: Logger<ILogObj>) => {
     socket.on(
       WebSocketMessage.SEND_CHAT,
       async ({ user, message }: { user: string; message: string }, cb) => {
-        const receiver = getUserByUsername(user)
-        const sender = getUserBySid(socket.id)
-
-        if (!receiver || !sender) return false
-
-        logger.info(
-          `received new messge from ${sender.sid}:${userDetails.username} -> ${receiver.sid}:${receiver.username}: '${message}'`
+        logger.trace(
+          `{${userDetails}} sent ✉  '${message}' -> ${user}`
         )
 
         const chat = await prisma.message.create({
           data: {
             recipientUsername: user,
-            senderUsername: sender.username,
+            senderUsername: userDetails.username,
             message,
             has_read: false
           }
         })
 
-        io.to(receiver.sid).emit(WebSocketMessage.CHAT, { chat })
-        io.to(receiver.sid).emit(WebSocketMessage.UNREAD_CHATS_COUNT, { user: receiver.username, unreadChatsCount: await getUnreadMessagesBetween({ sender: sender.username, recipient: receiver.username }) })
         cb({ chat })
+
+        const receiver = getUserByUsername(user)
+        if (!receiver) return
+
+        io.to(receiver.sid).emit(WebSocketMessage.CHAT, { chat })
+        io.to(receiver.sid).emit(WebSocketMessage.UNREAD_CHATS_COUNT, { user: receiver.username, unreadChatsCount: await getUnreadMessagesBetween({ sender: userDetails.username, recipient: receiver.username }) })
       }
     )
 
@@ -152,7 +148,7 @@ export default (io: Namespace, parentLogger: Logger<ILogObj>) => {
 
         const receiver = getUserByUsername(chat.senderUsername)
 
-        logger.info(
+        logger.trace(
           `${sender.sid}:${userDetails.username} -> has read message '${chat.id}:${chat.message}'`
         )
 
@@ -174,11 +170,10 @@ export default (io: Namespace, parentLogger: Logger<ILogObj>) => {
     socket.on('disconnect', () => {
       logger.info(`${userDetails} has disconnected`)
 
-      users.forEach((user, index) => {
-        if (user.username === userDetails.username) return
+      users = users.filter(user => user.username !== userDetails.username)
 
-        if (user.sid === socket.id) users.splice(index, 1)
-        else io.to(user.sid).emit(WebSocketMessage.USER_LEAVE, { user: userDetails.username })
+      users.forEach((user) => {
+        io.to(user.sid).emit(WebSocketMessage.USER_LEAVE, { user: userDetails.username })
       })
     })
   })

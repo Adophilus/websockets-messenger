@@ -19,7 +19,7 @@ export default (server: http.Server, parentLogger: Logger<ILogObj>) => {
     logger.info(`Auth token of ${socket.id}: ${socket.handshake.auth.token}`)
     if (TokenService.verifyToken(socket.handshake.auth.token))
       return next()
-    logger.info(`${socket.id} failed the authentication stage!`)
+    logger.warn(`${socket.id} failed the authentication stage!`)
     socket.disconnect()
   })
 
