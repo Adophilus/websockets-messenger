@@ -3,8 +3,7 @@ import { LitElement, html } from 'lit'
 import { query, customElement, property, state } from 'lit/decorators.js'
 import { repeat } from 'lit/directives/repeat.js'
 import Message from '../utils/Message'
-import TEvent, { TEventType } from '../utils/Event'
-import Recipient from '../utils/Recepient'
+import Recipient from '../utils/Recipient'
 
 export interface ISendMessageEvent {
   message: string
@@ -32,13 +31,13 @@ class ChatUIElement extends LitElement {
   declare fileInput: HTMLInputElement
 
   @property()
-  events: TEvent[] = []
+  messages: Message[] = []
 
   @property()
   username = ''
 
   @property()
-  declare recepient: Recipient
+  declare recipient: Recipient
 
   @state()
   isRecepientOnline = true
@@ -87,32 +86,15 @@ class ChatUIElement extends LitElement {
   render() {
     return html`
       <section class="${sectionClassName}">
-        <h3 class="text-xl">${this.isRecepientOnline ? '🟢' : '🔴'}${this.recepient.username}</h3>
+        <h3 class="text-xl">${this.recipient.isOnline ? '🟢' : '🔴'}${this.recipient.username}</h3>
       </section>
       <section class="${sectionClassName} h-full overflow-y-auto">
         <div class="divide-y">
-        ${repeat(this.events, (event: TEvent) => event?.message?.id, (event: TEvent) => {
-      switch (event.type) {
-        case 'message':
-          return this.messageTemplate(event.message!)
-        default:
-          return this.determineIfRecepientIsOnline(event)
-      }
-    })}
+        ${repeat(this.messages, (message: Message) => message.id, (message: Message) => this.getMessageTemplate(message))}
         </div>
       </section>
       <section class="${sectionClassName}">
-        <form @submit="${(ev: SubmitEvent) => {
-        ev.preventDefault()
-        this.dispatchEvent(
-          new CustomEvent('send-message', {
-            detail: {
-              message: this.messageInput.value
-            }
-          })
-        )
-        this.messageInput.value = ''
-      }}">
+        <form @submit="${this.sendMessage}">
         <div class="flex">
           <button type="button" @click="${this.selectFile}" class="text-white bg-indigo-500 border-0 py-2 px-8 focus:outline-none hover:bg-indigo-600 rounded text-lg"><i class="fa-solid fa-paperclip text-4xl"></i></button>
           <input type="text" id="message" name="message" class="w-full bg-white rounded border border-gray-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 text-base outline-none text-gray-700 py-1 px-3 leading-8 transition-colors duration-200 ease-in-out">
@@ -124,19 +106,20 @@ class ChatUIElement extends LitElement {
     `
   }
 
-  selectFile() {
-    this.fileInput.click()
+  sendMessage(ev: SubmitEvent) {
+    ev.preventDefault()
+    this.dispatchEvent(
+      new CustomEvent('send-message', {
+        detail: {
+          message: this.messageInput.value
+        }
+      })
+    )
+    this.messageInput.value = ''
   }
 
-  determineIfRecepientIsOnline(event: TEvent) {
-    if (event.type === 'user-join' || event.type === 'user-leave') {
-      if (event.type === 'user-join' && event.username === this.recepient.username) {
-        this.isRecepientOnline = true
-      }
-      if (event.type === 'user-leave' && event.username === this.recepient.username) {
-        this.isRecepientOnline = false
-      }
-    }
+  selectFile() {
+    this.fileInput.click()
   }
 }
 
