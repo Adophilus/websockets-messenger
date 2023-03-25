@@ -9,7 +9,7 @@ import { LitElement, html } from 'lit'
 import { query, customElement, state } from 'lit/decorators.js'
 import Recipient from '../utils/Recipient'
 import { TLoginEvent } from './user-details-modal.component'
-import { IRegisterRecepientEvent } from './lobby-ui.component'
+import { IRegisterRecipientEvent } from './lobby-ui.component'
 import { WebSocketMessage } from '../../../server/src/types'
 import { Router } from '@lit-labs/router'
 import JwtDecode from 'jwt-decode'
@@ -19,7 +19,8 @@ import { TToken } from '../../../server/src/types'
 class AppElement extends LitElement {
   private router: Router
   private wsManager = new Manager('', {
-    path: '/ws'
+    path: '/ws',
+    autoConnect: false
   })
 
   declare private ws: Socket
@@ -28,7 +29,7 @@ class AppElement extends LitElement {
   declare chatUIElement: ChatUIElement
 
   @state()
-  declare username: string
+  username: string | null = null
 
   @state()
   token = window.localStorage.getItem("token")
@@ -73,18 +74,18 @@ class AppElement extends LitElement {
 
   get chatUITemplate() {
     return html`<ws-chat-ui username="${this.username}"
-      .recepient="${this.recipient}"
+      .recipient="${this.recipient}"
       @send-message="${(ev: CustomEvent<ISendMessageEvent>) => this.sendMessage(ev.detail.message)}"
       @read-message="${(ev: CustomEvent<IReadMessageEvent>) => this.readMessage(ev.detail.message)}"></ws-chat-ui>`
   }
 
   get lobbyUITemplate() {
     return html`<ws-lobby-ui
-      @select-recepient="${(ev: CustomEvent<IRegisterRecepientEvent>) => {
-        this.registerRecepient(ev.detail.recepient)
+      @select-recipient="${(ev: CustomEvent<IRegisterRecipientEvent>) => {
+        this.registerRecipient(ev.detail.recipient)
         this.router.goto('/chat')
       }}"
-      .recepients="${this.recipients}"></ws-lobby-ui>`
+      .recipients="${this.recipients}"></ws-lobby-ui>`
   }
 
   firstUpdated(changedProperties): void {
@@ -136,10 +137,10 @@ class AppElement extends LitElement {
     this.username = username
   }
 
-  private registerRecepient(recepient: Recipient) {
-    this.recipient = recepient
+  private registerRecipient(recipient: Recipient) {
+    this.recipient = recipient
     this.recipients = []
-    this.ws.emit(WebSocketMessage.FETCH_CONVERSATION_WITH_USER, { user: recepient.username }, ({ chats }: { chats: Message[] }) => {
+    this.ws.emit(WebSocketMessage.FETCH_CONVERSATION_WITH_USER, { user: recipient.username }, ({ chats }: { chats: Message[] }) => {
       this.messages = chats.map(chat => new Message(chat)).reverse()
     })
   }
@@ -147,6 +148,11 @@ class AppElement extends LitElement {
   private registerToken(token: string) {
     window.localStorage.setItem("token", token)
     this.token = token
+  }
+
+  private unregisterToken() {
+    this.token = null
+    window.localStorage.removeItem('token')
   }
 
   private connectToWebsocket() {
@@ -195,18 +201,35 @@ class AppElement extends LitElement {
           this.recipients = this.recipients.concat(new Recipient({ username: user, unreadChatsCount: 0, isOnline: true }))
 
         this.ws.emit(WebSocketMessage.FETCH_UNREAD_CHATS_COUNT, { user }, ({ unreadChatsCount }: { unreadChatsCount: number }) => {
-          this.recipients = this.recipients.map(recepient => recepient.username === user ? new Recipient({ ...recepient, unreadChatsCount }) : recepient)
+          this.recipients = this.recipients.map(recipient => recipient.username === user ? new Recipient({ ...recipient, unreadChatsCount }) : recipient)
         })
       })
 
       this.ws.on(WebSocketMessage.UNREAD_CHATS_COUNT, ({ user, unreadChatsCount }: { user: string, unreadChatsCount: number }) => {
-        this.recipients = this.recipients.map(recepient => recepient.username === user ? new Recipient({ ...recepient, unreadChatsCount }) : recepient)
+        this.recipients = this.recipients.map(recipient => recipient.username === user ? new Recipient({ ...recipient, unreadChatsCount }) : recipient)
       })
     })
 
-    this.ws.on('disconnect', () => {
-      this.errors.push('Network connection lost. Reconnecting...')
+    this.ws.on("connect_error", (err) => {
+      console.log(err)
+    });
+
+    this.ws.on('disconnect', (reason) => {
+      switch (reason) {
+        case 'transport close':
+          this.username = null
+          this.unregisterToken()
+
+          this.errors.push('Session expired! Please try logging in again')
+          this.router.goto('/register')
+          break
+        default:
+          this.errors.push('Network connection lost. Reconnecting...')
+          break
+      }
     })
+
+    this.ws.connect();
   }
 
   private onLogin(ev: CustomEvent<TLoginEvent>) {

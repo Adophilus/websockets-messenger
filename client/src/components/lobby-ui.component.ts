@@ -2,16 +2,16 @@ import _ from 'lodash'
 import { LitElement, html } from 'lit'
 import { customElement, property } from 'lit/decorators.js'
 import { repeat } from 'lit/directives/repeat.js'
-import Recipient from '../utils/Recepient'
+import Recipient from '../utils/Recipient'
 
 
-export interface IRegisterRecepientEvent {
-  recepient: Recipient
+export interface IRegisterRecipientEvent {
+  recipient: Recipient
 }
 
 declare global {
   interface ElementEventMap {
-    'select-recepient': CustomEvent<IRegisterRecepientEvent>
+    'select-recipient': CustomEvent<IRegisterRecipientEvent>
   }
 }
 
@@ -20,7 +20,7 @@ const sectionClassName = 'bg-gray-100 shadow-lg p-2 md:p-4 lg:px-8'
 @customElement('ws-lobby-ui')
 class LobbyUIElement extends LitElement {
   @property()
-  recepients: Recipient[] = []
+  recipients: Recipient[] = []
 
   constructor() {
     super()
@@ -33,31 +33,31 @@ class LobbyUIElement extends LitElement {
       <h3 class="text-xl">Lobby</h3>
     </section>
     <section class="${sectionClassName}">
-      <div class="divide-y p-2">${this.recepients.length === 0 ? html`No one is online 🙁` : repeat(this.recepients, (recepient: Recipient) => recepient.username, (recepient: Recipient) => this.recepientElementTemplate(recepient))}</div>
+      <div class="divide-y p-2">${this.recipients.length === 0 ? html`No one is online 🙁` : repeat(this.recipients, (recipient: Recipient) => recipient.username, (recipient: Recipient) => this.recipientElementTemplate(recipient))}</div>
     </section>
     `
   }
 
   createRenderRoot() { return this }
 
-  recepientElementTemplate(recepient: Recipient) {
+  recipientElementTemplate(recipient: Recipient) {
     return html`<div>
     <p>
       <a @click="${(ev: MouseEvent) => {
         ev.preventDefault()
         this.dispatchEvent(
-          new CustomEvent<IRegisterRecepientEvent>('select-recepient', {
-            detail: { recepient }
+          new CustomEvent<IRegisterRecipientEvent>('select-recipient', {
+            detail: { recipient }
           })
         )
 
       }}" href="#" class="flex justify-between">
         <span>
-          ${_.escape(recepient.username)}
+          ${_.escape(recipient.username)}
         </span>
-        ${recepient.unreadChatsCount > 0 ? html`
+        ${recipient.unreadChatsCount > 0 ? html`
           <span class="inline-flex items-center justify-center px-2 py-1 mr-2 text-xs font-bold leading-none text-red-100 bg-red-600 rounded-full">
-            ${recepient.unreadChatsCount}
+            ${recipient.unreadChatsCount}
           </span>
           `: null}
         </a>

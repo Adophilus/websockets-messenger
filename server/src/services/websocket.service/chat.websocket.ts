@@ -43,13 +43,22 @@ class UserDetails {
 export default (io: Namespace, parentLogger: Logger<ILogObj>) => {
   const logger = parentLogger.getSubLogger({ name: 'ChatWebSocketLogger' })
 
-  io.on('connection', (socket) => {
-    const decodedToken = TokenService.verifyToken(socket.handshake.auth.token)
-    if (!decodedToken)
-      return
+  io.use((socket, next) => {
+    logger.info(`Auth token of ${socket.id}: ${socket.handshake.auth.token}`)
 
+    const tokenData = TokenService.verifyToken(socket.handshake.auth.token)
+    if (tokenData) {
+      socket.handshake.auth.tokenData = tokenData
+      return next()
+    }
+
+    logger.warn(`${socket.id} failed the authentication stage!`)
+    socket.disconnect(true)
+  })
+
+  io.on('connection', (socket) => {
     let userDetails = new UserDetails({
-      username: decodedToken.username,
+      username: socket.handshake.auth.tokenData.username,
       sid: socket.id
     })
 
