@@ -3,7 +3,6 @@ import { ILogObj, Logger } from 'tslog'
 import { prisma } from '../database.service'
 import { TUserDetails, WebSocketMessage } from '../../types'
 import TokenService from '../token.service'
-import { TToken } from '../../types'
 
 let users: TUserDetails[] = []
 
@@ -66,12 +65,13 @@ export default (io: Namespace, parentLogger: Logger<ILogObj>) => {
     socket.on(WebSocketMessage.FETCH_USERS, async (_, cb) => {
       logger.trace(`${userDetails} wishes to retrieve all online users`)
 
+      logger.trace('all online users', users)
+
       cb({
-        users: await Promise.all(users.filter(user => user.username !== userDetails.username)
-          .map(async (user) => ({
+        users: users.filter(user => user.username !== userDetails.username)
+          .map((user) => ({
             username: user.username,
-            unreadChatsCount: await getUnreadMessagesBetween({ sender: user.username, recipient: userDetails.username })
-          })))
+          }))
       })
     })
 
