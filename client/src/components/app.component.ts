@@ -202,7 +202,6 @@ class AppElement extends LitElement {
       })
 
       this.ws.on(WebSocketMessage.USER_JOIN, ({ user }: { user: string }) => {
-        console.log('new user joined', user)
         let hasRegisteredUser = false
         this.recipients = this.recipients.map(recipient => {
           if (recipient.username === user) {
