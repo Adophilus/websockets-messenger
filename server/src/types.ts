@@ -16,6 +16,10 @@ export type TChat = {
   date_sent: Date
 }
 
+export enum UserPolicy {
+  INVALID_AUTH = "invalid-auth"
+}
+
 export enum WebSocketMessage {
   FETCH_USERS = "fetch-users",
   FETCH_CONVERSATION_WITH_USER = "fetch-chats-with-user",
