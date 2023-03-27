@@ -1,7 +1,7 @@
 import { Namespace } from 'socket.io'
 import { ILogObj, Logger } from 'tslog'
 import { prisma } from '../database.service'
-import { TUserDetails, WebSocketMessage } from '../../types'
+import { UserPolicy, TUserDetails, WebSocketMessage } from '../../types'
 import TokenService from '../token.service'
 
 let users: TUserDetails[] = []
@@ -44,19 +44,29 @@ export default (io: Namespace, parentLogger: Logger<ILogObj>) => {
   const logger = parentLogger.getSubLogger({ name: 'ChatWebSocketLogger' })
 
   io.use((socket, next) => {
-    logger.info(`Auth token of ${socket.id}: ${socket.handshake.auth.token}`)
-
     const tokenData = TokenService.verifyToken(socket.handshake.auth.token)
-    if (tokenData) {
-      socket.handshake.auth.tokenData = tokenData
-      return next()
+    if (tokenData != null) {
+      socket.handshake.auth.tokenData = {
+        ...tokenData,
+        policies: []
+      }
+      next()
+      return
     }
 
-    logger.warn(`${socket.id} failed the authentication stage!`)
-    socket.disconnect(true)
+    socket.handshake.auth.tokenData = {
+      policies: [UserPolicy.INVALID_AUTH]
+    }
+    next()
   })
 
   io.on('connection', (socket) => {
+    if (socket.handshake.auth.tokenData.policies.includes(UserPolicy.INVALID_AUTH)) {
+      socket.emit(WebSocketMessage.AUTH_FAILED)
+      socket.disconnect(true)
+      return
+    }
+
     let userDetails = new UserDetails({
       username: socket.handshake.auth.tokenData.username,
       sid: socket.id
