@@ -15,6 +15,7 @@ import { Router } from '@lit-labs/router'
 import JwtDecode from 'jwt-decode'
 import { TToken } from '../../../server/src/types'
 import Storage from '../utils/Storage'
+import { Chat } from '../../../server/src/types'
 
 @customElement('ws-app')
 class AppElement extends LitElement {
@@ -76,6 +77,7 @@ class AppElement extends LitElement {
   get chatUITemplate() {
     return html`<ws-chat-ui username="${this.username}"
       .recipient="${this.recipient}"
+      .messages="${this.messages}"
       @send-message="${(ev: CustomEvent<ISendMessageEvent>) => this.sendMessage(ev.detail.message)}"
       @read-message="${(ev: CustomEvent<IReadMessageEvent>) => this.readMessage(ev.detail.message)}"></ws-chat-ui>`
   }
@@ -114,16 +116,10 @@ class AppElement extends LitElement {
     ${this.errorModalTemplate}
     ${this.router.outlet()}
     `
-
-    // return html`
-    // ${this.errorModalTemplate}
-    // ${this.chatUITemplate}
-    // ${this.lobbyUITemplate}
-    // ${this.registrationTemplate}`
   }
 
   sendMessage(message: string) {
-    this.ws.emit(WebSocketMessage.SEND_CHAT, { message, user: this.recipient.username }, ({ chat }: { chat: Message }) => {
+    this.ws.emit(WebSocketMessage.SEND_MESSAGE, { message, user: this.recipient.username }, ({ chat }: { chat: Message }) => {
       this.messages = this.messages.concat(new Message(chat))
     })
   }
@@ -149,8 +145,8 @@ class AppElement extends LitElement {
   private registerRecipient(recipient: Recipient) {
     this.recipient = recipient
     this.recipients = []
-    this.ws.emit(WebSocketMessage.FETCH_CONVERSATION_WITH_USER, { user: recipient.username }, ({ chats }: { chats: Message[] }) => {
-      this.messages = chats.map(chat => new Message(chat)).reverse()
+    this.ws.emit(WebSocketMessage.FETCH_CONVERSATION_WITH_USER, { user: recipient.username }, ({ chats }: { chats: Chat[] }) => {
+      this.messages = chats.map(chat => new Message({ id: chat.id, sender: chat.senderUsername, recipient: chat.recipientUsername, has_read: chat.has_read, message: chat.message, image: chat.image })).reverse()
     })
   }
 
