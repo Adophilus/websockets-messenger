@@ -75,12 +75,6 @@ class ChatUIElement extends LitElement {
     `
   }
 
-  userTemplate(user: string, action: TEventType) {
-    return html`<div class="p-2">
-      <p class="font-bold">${_.escape(user)} ${action === "user-join" ? "has come online" : "has gone offline"}</p>
-    </div>`
-  }
-
   createRenderRoot() { return this }
 
   render() {
@@ -100,7 +94,7 @@ class ChatUIElement extends LitElement {
           <input type="text" id="message" name="message" class="w-full bg-white rounded border border-gray-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 text-base outline-none text-gray-700 py-1 px-3 leading-8 transition-colors duration-200 ease-in-out">
           <button type="submit" class="text-white bg-indigo-500 border-0 py-2 px-8 focus:outline-none hover:bg-indigo-600 rounded text-lg"><i class="fa-solid fa-paper-plane-top text-4xl"></i></button>
         </div>
-        <input type="file" id="fileInput" class="appearance-none" />
+        <input type="file" id="fileInput" class="hidden" />
       </form>
     </section>
     `
