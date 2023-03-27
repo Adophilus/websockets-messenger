@@ -224,8 +224,8 @@ class AppElement extends LitElement {
       })
     })
 
-    this.ws.on("connect_error", (err) => {
-      console.log(err)
+    this.ws.on("connect_error", () => {
+      this.errors.push('Network error. Reconnecting...')
     });
 
     this.ws.on('disconnect', (reason) => {
