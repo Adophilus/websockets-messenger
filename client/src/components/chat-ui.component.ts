@@ -48,16 +48,12 @@ class ChatUIElement extends LitElement {
   }
 
   readMessage(message: Message) {
-    if (message.recipient !== this.username)
-      return
-    if (message.has_read)
-      return
-    this.dispatchEvent(new CustomEvent('read-message', { detail: { message } }))
+    if (message.sender !== this.username && !message.has_read) {
+      this.dispatchEvent(new CustomEvent<IReadMessageEvent>('read-message', { detail: { message } }))
+    }
   }
 
   messageTemplate(message: Message) {
-    this.readMessage(message)
-
     return html`
     <div class="p-2">
       <p class="flex justify-end">
@@ -69,7 +65,7 @@ class ChatUIElement extends LitElement {
       </p>
       <p>${_.escape(message.message)}</p>
       <div class="flex justify-end">
-        <small class="text-xs">${message.has_read ? '✔️' : '❌'}</small>
+        <small class="text-xs">${message.has_read ? '✔️' : ''}</small>
       </div>
     </div>
     `
@@ -84,15 +80,18 @@ class ChatUIElement extends LitElement {
       </section>
       <section class="${sectionClassName} h-full overflow-y-auto">
         <div class="divide-y">
-        ${repeat(this.messages, (message: Message) => message.id, (message: Message) => this.getMessageTemplate(message))}
+        ${repeat(this.messages, (message: Message) => message.id, (message: Message) => {
+      this.readMessage(message)
+      return this.messageTemplate(message)
+    })}
         </div>
       </section>
       <section class="${sectionClassName}">
         <form @submit="${this.sendMessage}">
         <div class="flex">
-          <button type="button" @click="${this.selectFile}" class="text-white bg-indigo-500 border-0 py-2 px-8 focus:outline-none hover:bg-indigo-600 rounded text-lg"><i class="fa-solid fa-paperclip text-4xl"></i></button>
-          <input type="text" id="message" name="message" class="w-full bg-white rounded border border-gray-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 text-base outline-none text-gray-700 py-1 px-3 leading-8 transition-colors duration-200 ease-in-out">
-          <button type="submit" class="text-white bg-indigo-500 border-0 py-2 px-8 focus:outline-none hover:bg-indigo-600 rounded text-lg"><i class="fa-solid fa-paper-plane-top text-4xl"></i></button>
+          <button type="button" @click="${this.selectFile}" class="text-white bg-indigo-500 border-0 py-2 px-8 focus:outline-none hover:bg-indigo-600 rounded text-lg">File</button>
+          <input type="text" id="message" required name="message" class="w-full bg-white rounded border border-gray-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 text-base outline-none text-gray-700 py-1 px-3 leading-8 transition-colors duration-200 ease-in-out">
+          <button type="submit" class="text-white bg-indigo-500 border-0 py-2 px-8 focus:outline-none hover:bg-indigo-600 rounded text-lg">Send</button>
         </div>
         <input type="file" id="fileInput" class="hidden" />
       </form>
