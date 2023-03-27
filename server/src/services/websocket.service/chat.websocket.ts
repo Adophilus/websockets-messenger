@@ -84,8 +84,6 @@ export default (io: Namespace, parentLogger: Logger<ILogObj>) => {
     socket.on(WebSocketMessage.FETCH_USERS, async (_, cb) => {
       logger.trace(`${userDetails} wishes to retrieve all online users`)
 
-      logger.trace('all online users', users)
-
       cb({
         users: users.filter(user => user.username !== userDetails.username)
           .map((user) => ({
@@ -123,17 +121,20 @@ export default (io: Namespace, parentLogger: Logger<ILogObj>) => {
     })
 
     socket.on(
-      WebSocketMessage.SEND_CHAT,
+      WebSocketMessage.SEND_MESSAGE,
       async ({ user, message }: { user: string; message: string }, cb) => {
+        const effectiveMessage = message.trimEnd()
+        if (!effectiveMessage) return
+
         logger.trace(
-          `{${userDetails}} sent ✉  '${message}' -> ${user}`
+          `{${userDetails}} sent ✉  '${effectiveMessage}' -> ${user}`
         )
 
         const chat = await prisma.message.create({
           data: {
             recipientUsername: user,
             senderUsername: userDetails.username,
-            message,
+            message: effectiveMessage,
             has_read: false
           }
         })
