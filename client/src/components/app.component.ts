@@ -176,7 +176,6 @@ class AppElement extends LitElement {
       })
 
       this.ws.emit(WebSocketMessage.FETCH_USERS, {}, ({ users }: { users: { username: string }[] }) => {
-        console.log('all online users:', users)
         this.recipients = users.map(user => new Recipient({ username: user.username, unreadChatsCount: 0, isOnline: true }))
       })
 
@@ -194,7 +193,6 @@ class AppElement extends LitElement {
       })
 
       this.ws.on(WebSocketMessage.USER_LEAVE, ({ user }: { user: string }) => {
-        console.log('user left', user)
         this.recipients = this.recipients.map(recipient => {
           if (recipient.username === user) {
             recipient.isOnline = false
