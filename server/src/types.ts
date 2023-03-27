@@ -1,3 +1,5 @@
+import { Message } from "@prisma/client"
+
 export type TUserDetails = {
   sid: string
   username: string
@@ -27,8 +29,10 @@ export enum WebSocketMessage {
   UNREAD_CHATS_COUNT = "unread-chats-count",
   READ_CHAT = "read-chat",
   CHAT = "chat",
-  SEND_CHAT = "send-chat",
+  SEND_MESSAGE = "send-message",
   USER_JOIN = "user-join",
   USER_LEAVE = "user-leave",
   AUTH_FAILED = "auth-failed"
 }
+
+export type { Message as Chat }
