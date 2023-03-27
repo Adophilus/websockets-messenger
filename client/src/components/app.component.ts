@@ -14,6 +14,7 @@ import { WebSocketMessage } from '../../../server/src/types'
 import { Router } from '@lit-labs/router'
 import JwtDecode from 'jwt-decode'
 import { TToken } from '../../../server/src/types'
+import Storage from '../utils/Storage'
 
 @customElement('ws-app')
 class AppElement extends LitElement {
@@ -32,7 +33,7 @@ class AppElement extends LitElement {
   username: string | null = null
 
   @state()
-  token = window.localStorage.getItem("token")
+  token = Storage.getItem("token")
 
   @state()
   declare recipient: Recipient
@@ -146,13 +147,13 @@ class AppElement extends LitElement {
   }
 
   private registerToken(token: string) {
-    window.localStorage.setItem("token", token)
+    Storage.setItem("token", token)
     this.token = token
   }
 
   private unregisterToken() {
     this.token = null
-    window.localStorage.removeItem('token')
+    Storage.removeItem('token')
   }
 
   private connectToWebsocket() {
