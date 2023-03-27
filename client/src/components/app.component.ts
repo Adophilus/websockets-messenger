@@ -93,7 +93,15 @@ class AppElement extends LitElement {
     super.firstUpdated(changedProperties)
 
     if (this.token) {
-      this.username = JwtDecode<TToken>(this.token).username
+      try {
+        this.username = JwtDecode<TToken>(this.token).username
+      } catch {
+        this.unregisterToken()
+        this.errors.push('Session expired! Please try logging in again')
+        this.router.goto('/register')
+        return
+      }
+
       this.connectToWebsocket()
       this.router.goto('/lobby')
     }
