@@ -25,5 +25,6 @@ export enum WebSocketMessage {
   CHAT = "chat",
   SEND_CHAT = "send-chat",
   USER_JOIN = "user-join",
-  USER_LEAVE = "user-leave"
+  USER_LEAVE = "user-leave",
+  AUTH_FAILED = "auth-failed"
 }
