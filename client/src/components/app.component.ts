@@ -228,21 +228,6 @@ class AppElement extends LitElement {
       this.errors.push('Network error. Reconnecting...')
     });
 
-    this.ws.on('disconnect', (reason) => {
-      switch (reason) {
-        case 'transport close':
-          this.username = null
-          this.unregisterToken()
-
-          this.errors.push('Session expired! Please try logging in again')
-          this.router.goto('/register')
-          break
-        default:
-          this.errors.push('Network connection lost. Reconnecting...')
-          break
-      }
-    })
-
     this.ws.connect();
   }
 
