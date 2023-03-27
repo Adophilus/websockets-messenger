@@ -168,6 +168,13 @@ class AppElement extends LitElement {
     this.ws = this.wsManager.socket('/chat', { auth: { token: this.token } })
 
     this.ws.on('connect', () => {
+      this.ws.on(WebSocketMessage.AUTH_FAILED, () => {
+        this.unregisterToken()
+
+        this.errors.push('Session expired! Please try logging in again')
+        this.router.goto('/register')
+      })
+
       this.ws.emit(WebSocketMessage.FETCH_USERS, {}, ({ users }: { users: { username: string }[] }) => {
         console.log('all online users:', users)
         this.recipients = users.map(user => new Recipient({ username: user.username, unreadChatsCount: 0, isOnline: true }))
