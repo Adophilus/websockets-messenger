@@ -82,12 +82,14 @@ export default (io: Namespace, parentLogger: Logger<ILogObj>) => {
     users.push(userDetails)
 
     socket.on(WebSocketMessage.FETCH_USERS, async (_, cb) => {
-      logger.trace(`${userDetails} wishes to retrieve all online users`)
+      logger.trace(`${userDetails} wishes to retrieve all users`)
 
+      const dbUsers = await prisma.user.findMany()
       cb({
-        users: users.filter(user => user.username !== userDetails.username)
+        users: dbUsers.filter(user => user.username !== userDetails.username)
           .map((user) => ({
             username: user.username,
+            isOnline: users.find(onlineUser => onlineUser.username === user.username)
           }))
       })
     })
