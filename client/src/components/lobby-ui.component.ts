@@ -28,12 +28,13 @@ class LobbyUIElement extends LitElement {
   }
 
   render() {
+    console.log('lobby-ui:', this.recipients)
     return html`
     <section class="${sectionClassName}">
       <h3 class="text-xl">Lobby</h3>
     </section>
     <section class="${sectionClassName}">
-      <div class="divide-y p-2">${this.recipients.length === 0 ? html`No one is online 🙁` : repeat(this.recipients, (recipient: Recipient) => recipient.username, (recipient: Recipient) => this.recipientElementTemplate(recipient))}</div>
+      <div class="divide-y">${this.recipients.length === 0 ? html`No one is online 🙁` : repeat(this.recipients, (recipient: Recipient) => recipient.username, (recipient: Recipient) => this.recipientElementTemplate(recipient))}</div>
     </section>
     `
   }
@@ -50,10 +51,14 @@ class LobbyUIElement extends LitElement {
             detail: { recipient }
           })
         )
-
-      }}" href="#" class="flex justify-between">
-        <span>
-          ${_.escape(recipient.username)}
+      }}" href="#" class="flex justify-between my-2">
+        <span class="space-x-2">
+          <span>
+            ${recipient.isOnline ? '🟢' : '🔴'}
+          </span>
+          <span>
+            ${_.escape(recipient.username)}
+          </span>
         </span>
         ${recipient.unreadChatsCount > 0 ? html`
           <span class="inline-flex items-center justify-center px-2 py-1 mr-2 text-xs font-bold leading-none text-red-100 bg-red-600 rounded-full">
