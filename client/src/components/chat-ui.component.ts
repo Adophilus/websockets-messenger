@@ -75,8 +75,16 @@ class ChatUIElement extends LitElement {
 
   render() {
     return html`
-      <section class="${sectionClassName}">
-        <h3 class="text-xl">${this.recipient.isOnline ? '🟢' : '🔴'}${this.recipient.username}</h3>
+      <section class="${sectionClassName} flex gap-x-4">
+        <a href="#" @click="${this.goBack}">◀</a>
+        <h3 class="text-xl space-x-2">
+          <span>
+            ${this.recipient.isOnline ? '🟢' : '🔴'}
+          </span>
+          <span>
+            ${this.recipient.username}
+          </span>
+        </h3>
       </section>
       <section class="${sectionClassName} h-full overflow-y-auto">
         <div class="divide-y">
@@ -109,6 +117,11 @@ class ChatUIElement extends LitElement {
       })
     )
     this.messageInput.value = ''
+  }
+
+  goBack(ev: MouseEvent) {
+    ev.preventDefault()
+    this.dispatchEvent(new CustomEvent('go-back', { detail: {} }))
   }
 
   selectFile() {
