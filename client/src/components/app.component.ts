@@ -78,11 +78,13 @@ class AppElement extends LitElement {
     return html`<ws-chat-ui username="${this.username}"
       .recipient="${this.recipient}"
       .messages="${this.messages}"
+      @go-back="${() => this.router.goto('/lobby')}"
       @send-message="${(ev: CustomEvent<ISendMessageEvent>) => this.sendMessage(ev.detail.message)}"
       @read-message="${(ev: CustomEvent<IReadMessageEvent>) => this.readMessage(ev.detail.message)}"></ws-chat-ui>`
   }
 
   get lobbyUITemplate() {
+    console.log('app-component:', this.recipients)
     return html`<ws-lobby-ui
       @select-recipient="${(ev: CustomEvent<IRegisterRecipientEvent>) => {
         this.registerRecipient(ev.detail.recipient)
@@ -171,8 +173,8 @@ class AppElement extends LitElement {
         this.router.goto('/register')
       })
 
-      this.ws.emit(WebSocketMessage.FETCH_USERS, {}, ({ users }: { users: { username: string }[] }) => {
-        this.recipients = users.map(user => new Recipient({ username: user.username, unreadChatsCount: 0, isOnline: true }))
+      this.ws.emit(WebSocketMessage.FETCH_USERS, {}, ({ users }: { users: { username: string, isOnline: boolean }[] }) => {
+        this.recipients = users.map(user => new Recipient({ username: user.username, unreadChatsCount: 0, isOnline: user.isOnline }))
       })
 
       this.ws.on(WebSocketMessage.CHAT, ({ chat }: { chat: Message }) => {
