@@ -3,6 +3,14 @@ import { ILogObj, Logger } from 'tslog'
 import { prisma } from '../database.service'
 import { UserPolicy, TUserDetails, WebSocketMessage } from '../../types'
 import TokenService from '../token.service'
+import busboy from 'busboy'
+
+const storage = busboy()
+storage.on('file', (name, file, info) => {
+  const fileName = `${Date.now()}-${name}`
+  const filePath = `/tmp/${fileName}`
+  file.pipe(fs.createWriteStream(filePath))
+})
 
 let users: TUserDetails[] = []
 
@@ -124,14 +132,11 @@ export default (io: Namespace, parentLogger: Logger<ILogObj>) => {
 
     socket.on(
       WebSocketMessage.SEND_MESSAGE,
-      async (file: File, cb) => {
-        logger.info(file)
-        cb({ media: 'http://google.com' })
-      })
-
-    socket.on(
-      WebSocketMessage.SEND_MESSAGE,
-      async ({ user, message }: { user: string; message: string, file: File | null }, cb) => {
+      async ({ user, message, file }: { user: string; message: string, file: string | null }, cb) => {
+        if (file) {
+          const fileObject = await fetch(file).then(res => res.blob())
+          logger.warn(fileObject)
+        }
         const effectiveMessage = message.trimEnd()
         if (!effectiveMessage) return
 

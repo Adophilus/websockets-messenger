@@ -126,7 +126,8 @@ class AppElement extends LitElement {
     if (file) {
       reader.readAsDataURL(file)
       reader.addEventListener('loadend', () => {
-        base64EncodedFileData = reader.result?.toString().replace(/^data:.*?\/.*?;base64,/, '')
+        base64EncodedFileData = reader.result?.toString()
+        // base64EncodedFileData = base64EncodedFileData.replace(/^data:.*?\/.*?;base64,/, '')
         this.ws.emit(WebSocketMessage.SEND_MESSAGE, { message, user: this.recipient.username, file: base64EncodedFileData }, ({ chat }: { chat: Chat }) => {
           this.messages = this.messages.concat(new Message({ id: chat.id, message: chat.message, sender: chat.senderUsername, recipient: chat.recipientUsername, has_read: chat.has_read, image: null }))
         })
