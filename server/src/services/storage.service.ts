@@ -8,7 +8,7 @@ import fs from 'fs'
 const logger = new Logger({ name: 'StorageService' })
 
 export default {
-  upload(media: Media): String | null {
+  upload(media: Media): string | null {
     logger.info(`uploading media: ${media.name}`)
     const buffer = Buffer.from(media.data, "base64")
     const fileExtension = media.mimetype.split("/")[1]
