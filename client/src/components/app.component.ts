@@ -150,7 +150,7 @@ class AppElement extends LitElement {
   private registerRecipient(recipient: Recipient) {
     this.recipient = recipient
     this.ws.emit(WebSocketMessage.FETCH_CONVERSATION_WITH_USER, { user: recipient.username }, ({ chats }: { chats: Chat[] }) => {
-      this.messages = chats.map(chat => new Message({ id: chat.id, sender: chat.senderUsername, recipient: chat.recipientUsername, has_read: chat.has_read, message: chat.message, image: chat.image })).reverse()
+      this.messages = chats.map(chat => new Message({ id: chat.id, sender: chat.senderUsername, recipient: chat.recipientUsername, has_read: chat.has_read, message: chat.message, image: null })).reverse()
     })
   }
 
