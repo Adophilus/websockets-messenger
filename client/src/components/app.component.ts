@@ -88,7 +88,6 @@ class AppElement extends LitElement {
   }
 
   get lobbyUITemplate() {
-    console.log('app-component:', this.recipients)
     return html`<ws-lobby-ui
       @select-recipient="${(ev: CustomEvent<IRegisterRecipientEvent>) => {
         this.registerRecipient(ev.detail.recipient)
@@ -125,8 +124,8 @@ class AppElement extends LitElement {
   }
 
   sendMessage(message: string) {
-    this.ws.emit(WebSocketMessage.SEND_MESSAGE, { message, user: this.recipient.username }, ({ chat }: { chat: Message }) => {
-      this.messages = this.messages.concat(new Message(chat))
+    this.ws.emit(WebSocketMessage.SEND_MESSAGE, { message, user: this.recipient.username }, ({ chat }: { chat: Chat }) => {
+      this.messages = this.messages.concat(new Message({ id: chat.id, message: chat.message, sender: chat.senderUsername, recipient: chat.recipientUsername, has_read: chat.has_read, image: null }))
     })
   }
 
@@ -150,7 +149,6 @@ class AppElement extends LitElement {
 
   private registerRecipient(recipient: Recipient) {
     this.recipient = recipient
-    this.recipients = []
     this.ws.emit(WebSocketMessage.FETCH_CONVERSATION_WITH_USER, { user: recipient.username }, ({ chats }: { chats: Chat[] }) => {
       this.messages = chats.map(chat => new Message({ id: chat.id, sender: chat.senderUsername, recipient: chat.recipientUsername, has_read: chat.has_read, message: chat.message, image: chat.image })).reverse()
     })
