@@ -9,7 +9,8 @@ export default (server: http.Server, parentLogger: Logger<ILogObj>) => {
     cors: {
       origin: 'http://localhost:3000',
       methods: ['GET', 'POST']
-    }
+    },
+    maxHttpBufferSize: 10 * 1024 * 1024
   })
 
   const logger = parentLogger.getSubLogger({ name: 'WebSocketLogger' })
