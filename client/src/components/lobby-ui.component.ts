@@ -28,7 +28,6 @@ class LobbyUIElement extends LitElement {
   }
 
   render() {
-    console.log('lobby-ui:', this.recipients)
     return html`
     <section class="${sectionClassName}">
       <h3 class="text-xl">Lobby</h3>
@@ -57,7 +56,7 @@ class LobbyUIElement extends LitElement {
             ${recipient.isOnline ? '🟢' : '🔴'}
           </span>
           <span>
-            ${_.escape(recipient.username)}
+            ${recipient.username}
           </span>
         </span>
         ${recipient.unreadChatsCount > 0 ? html`
