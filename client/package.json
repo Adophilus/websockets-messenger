@@ -27,6 +27,7 @@
     "jwt-decode": "^3.1.2",
     "lit": "^2.6.1",
     "lodash": "^4.17.21",
+    "simple-router": "github:Adophilus/simple-router",
     "socket.io-client": "^4.6.1"
   }
 }
