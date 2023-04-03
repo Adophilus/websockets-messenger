@@ -5,7 +5,8 @@ import Message from '../utils/Message'
 import Recipient from '../utils/Recipient'
 
 export interface ISendMessageEvent {
-  message: string
+  message: string,
+  file: File | null
 }
 
 export interface IReadMessageEvent {
@@ -108,14 +109,21 @@ class ChatUIElement extends LitElement {
 
   sendMessage(ev: SubmitEvent) {
     ev.preventDefault()
-    this.dispatchEvent(
-      new CustomEvent('send-message', {
-        detail: {
-          message: this.messageInput.value
-        }
-      })
-    )
-    this.messageInput.value = ''
+    const message = this.messageInput.value.trim()
+    const file = this.fileInput.files?.[0] ?? null
+
+    if (message) {
+      this.dispatchEvent(
+        new CustomEvent('send-message', {
+          detail: {
+            message,
+            file
+          }
+        })
+      )
+      this.messageInput.value = ''
+      this.fileInput.value = ''
+    }
   }
 
   goBack(ev: MouseEvent) {

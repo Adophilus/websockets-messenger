@@ -1,8 +1,5 @@
 import Message from '../utils/Message'
 import ChatUIElement, { IReadMessageEvent, ISendMessageEvent } from './chat-ui.component'
-import './lobby-ui.component'
-import './user-details-modal.component'
-import './chat-ui.component'
 import { Manager, Socket } from 'socket.io-client'
 import './error-modal.component'
 import { LitElement, html } from 'lit'
@@ -83,7 +80,7 @@ class AppElement extends LitElement {
       .recipient="${this.recipient}"
       .messages="${this.messages}"
       @go-back="${() => this.router.goto('/lobby')}"
-      @send-message="${(ev: CustomEvent<ISendMessageEvent>) => this.sendMessage(ev.detail.message)}"
+      @send-message="${(ev: CustomEvent<ISendMessageEvent>) => this.sendMessage(ev.detail)}"
       @read-message="${(ev: CustomEvent<IReadMessageEvent>) => this.readMessage(ev.detail.message)}"></ws-chat-ui>`
   }
 
@@ -123,9 +120,13 @@ class AppElement extends LitElement {
     `
   }
 
-  sendMessage(message: string) {
+  sendMessage({ message, file }: { message: string, file: File | null }) {
     this.ws.emit(WebSocketMessage.SEND_MESSAGE, { message, user: this.recipient.username }, ({ chat }: { chat: Chat }) => {
       this.messages = this.messages.concat(new Message({ id: chat.id, message: chat.message, sender: chat.senderUsername, recipient: chat.recipientUsername, has_read: chat.has_read, image: null }))
+      if (file)
+        this.ws.emit(WebSocketMessage.UPLOAD_MEDIA, file, ({ media }: { media: string }) => {
+          console.log(media)
+        })
     })
   }
 
