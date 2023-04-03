@@ -124,7 +124,14 @@ export default (io: Namespace, parentLogger: Logger<ILogObj>) => {
 
     socket.on(
       WebSocketMessage.SEND_MESSAGE,
-      async ({ user, message }: { user: string; message: string }, cb) => {
+      async (file: File, cb) => {
+        logger.info(file)
+        cb({ media: 'http://google.com' })
+      })
+
+    socket.on(
+      WebSocketMessage.SEND_MESSAGE,
+      async ({ user, message }: { user: string; message: string, file: File | null }, cb) => {
         const effectiveMessage = message.trimEnd()
         if (!effectiveMessage) return
 
