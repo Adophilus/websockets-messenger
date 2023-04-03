@@ -93,7 +93,7 @@ class AppElement extends LitElement {
       .recipients="${this.recipients}"></ws-lobby-ui>`
   }
 
-  firstUpdated(changedProperties): void {
+  firstUpdated(changedProperties: any): void {
     super.firstUpdated(changedProperties)
 
     if (this.token) {
