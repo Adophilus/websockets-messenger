@@ -121,13 +121,20 @@ class AppElement extends LitElement {
   }
 
   sendMessage({ message, file }: { message: string, file: File | null }) {
-    this.ws.emit(WebSocketMessage.SEND_MESSAGE, { message, user: this.recipient.username }, ({ chat }: { chat: Chat }) => {
-      this.messages = this.messages.concat(new Message({ id: chat.id, message: chat.message, sender: chat.senderUsername, recipient: chat.recipientUsername, has_read: chat.has_read, image: null }))
-      if (file)
-        this.ws.emit(WebSocketMessage.UPLOAD_MEDIA, file, ({ media }: { media: string }) => {
-          console.log(media)
+    let base64EncodedFileData = null
+    const reader = new FileReader()
+    if (file) {
+      reader.readAsDataURL(file)
+      reader.addEventListener('loadend', () => {
+        base64EncodedFileData = reader.result?.toString().replace(/^data:.*?\/.*?;base64,/, '')
+        this.ws.emit(WebSocketMessage.SEND_MESSAGE, { message, user: this.recipient.username, file: base64EncodedFileData }, ({ chat }: { chat: Chat }) => {
+          this.messages = this.messages.concat(new Message({ id: chat.id, message: chat.message, sender: chat.senderUsername, recipient: chat.recipientUsername, has_read: chat.has_read, image: null }))
         })
-    })
+      })
+      reader.addEventListener('error', () => {
+        base64EncodedFileData = null
+      })
+    }
   }
 
   readMessage(chat: Message) {
@@ -226,6 +233,10 @@ class AppElement extends LitElement {
 
     this.ws.on("connect_error", () => {
       this.errors.push('Network error. Reconnecting...')
+    });
+
+    this.ws.on("reconnect_attempt", () => {
+      console.log('retrying connection...')
     });
 
     this.ws.connect();
