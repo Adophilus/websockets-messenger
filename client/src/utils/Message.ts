@@ -3,7 +3,7 @@ class Message {
   declare public sender: string
   declare public recipient: string
   declare public message: string
-  declare public image: string
+  declare public image: string | null
   declare public has_read: boolean
 
   constructor({ id, sender, recipient, message, image, has_read }: Message) {
