@@ -21,6 +21,7 @@ model Message {
   senderUsername    String
   recipientUsername String
   has_read          Boolean
+  media             String?
   created_at        DateTime @default(now())
   updated_at        DateTime @updatedAt
 
