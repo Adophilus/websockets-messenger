@@ -1,16 +1,9 @@
 import { Namespace } from 'socket.io'
 import { ILogObj, Logger } from 'tslog'
 import { prisma } from '../database.service'
-import { UserPolicy, TUserDetails, WebSocketMessage } from '../../types'
+import { Media, UserPolicy, TUserDetails, WebSocketMessage } from '../../types'
 import TokenService from '../token.service'
-import busboy from 'busboy'
-
-const storage = busboy()
-storage.on('file', (name, file, info) => {
-  const fileName = `${Date.now()}-${name}`
-  const filePath = `/tmp/${fileName}`
-  file.pipe(fs.createWriteStream(filePath))
-})
+import StorageService from '../storage.service'
 
 let users: TUserDetails[] = []
 
@@ -132,11 +125,7 @@ export default (io: Namespace, parentLogger: Logger<ILogObj>) => {
 
     socket.on(
       WebSocketMessage.SEND_MESSAGE,
-      async ({ user, message, file }: { user: string; message: string, file: string | null }, cb) => {
-        if (file) {
-          const fileObject = await fetch(file).then(res => res.blob())
-          logger.warn(fileObject)
-        }
+      async ({ user, message, media }: { user: string; message: string, media: Media | null }, cb) => {
         const effectiveMessage = message.trimEnd()
         if (!effectiveMessage) return
 
@@ -144,12 +133,19 @@ export default (io: Namespace, parentLogger: Logger<ILogObj>) => {
           `{${userDetails}} sent ✉  '${effectiveMessage}' -> ${user}`
         )
 
+        let mediaPath = null
+        if (media) {
+          mediaPath = StorageService.upload(media)
+          logger.warn(mediaPath)
+        }
+
         const chat = await prisma.message.create({
           data: {
             recipientUsername: user,
             senderUsername: userDetails.username,
             message: effectiveMessage,
-            has_read: false
+            has_read: false,
+            media: mediaPath
           }
         })
 
