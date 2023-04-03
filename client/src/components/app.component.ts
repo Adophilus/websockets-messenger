@@ -11,11 +11,11 @@ import Recipient from '../utils/Recipient'
 import { TLoginEvent } from './user-details-modal.component'
 import { IRegisterRecipientEvent } from './lobby-ui.component'
 import { WebSocketMessage } from '../../../server/src/types'
-import { Router } from '@lit-labs/router'
 import JwtDecode from 'jwt-decode'
 import { TToken } from '../../../server/src/types'
 import Storage from '../utils/Storage'
 import { Chat } from '../../../server/src/types'
+import Router from 'simple-router'
 
 @customElement('ws-app')
 class AppElement extends LitElement {
@@ -52,12 +52,16 @@ class AppElement extends LitElement {
     super()
     this.setAttribute("class", "flex flex-col w-full px-4 mx-auto mt-8 md:mt-12 max-w-xl gap-y-4")
 
-    this.router = new Router(this, [
-      { path: '/' },
-      { path: '/register', render: () => this.registrationTemplate, enter: async () => { await import('./user-details-modal.component'); return true } },
-      { path: '/chat', render: () => this.chatUITemplate, enter: async () => { await import('./chat-ui.component'); return true } },
-      { path: '/lobby', render: () => this.lobbyUITemplate, enter: async () => { await import('./lobby-ui.component'); return true } },
+    this.router = new Router([
+      { name: 'register', path: '/register', render: () => this.registrationTemplate, enter: async () => import('./user-details-modal.component') },
+      { name: 'chat', path: '/chat', render: () => this.chatUITemplate, enter: async () => import('./chat-ui.component') },
+      { name: 'lobby', path: '/lobby', render: () => this.lobbyUITemplate, enter: async () => import('./lobby-ui.component') },
     ])
+    this.router.init()
+    this.router.onChange(() => {
+      this.requestUpdate()
+    })
+    // window.router = this.router
   }
 
   get registrationTemplate() {
