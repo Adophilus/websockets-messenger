@@ -1,4 +1,3 @@
-import _ from 'lodash'
 import { LitElement, html } from 'lit'
 import { query, customElement, property, state } from 'lit/decorators.js'
 import { repeat } from 'lit/directives/repeat.js'
@@ -59,11 +58,11 @@ class ChatUIElement extends LitElement {
       <p class="flex justify-end">
           ${message.sender === this.username ?
         html`<strong class="text-indigo-700">You</strong>` :
-        html`<strong>${_.escape(message.sender)}</strong>`
+        html`<strong>${message.sender}</strong>`
       }
         </small>
       </p>
-      <p>${_.escape(message.message)}</p>
+      <p>${message.message}</p>
       <div class="flex justify-end">
         <small class="text-xs">${message.has_read ? '✔️' : ''}</small>
       </div>
