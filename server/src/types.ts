@@ -1,5 +1,12 @@
 import { Message } from "@prisma/client"
 
+export type Media = {
+  name: string
+  size: number
+  mimetype: string
+  data: string
+}
+
 export type TUserDetails = {
   sid: string
   username: string
