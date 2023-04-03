@@ -54,6 +54,7 @@ class ChatUIElement extends LitElement {
   }
 
   messageTemplate(message: Message) {
+    const messageMediaURL = message.media ? new URL(message.media, import.meta.env.VITE_API_URI).toString() : null
     return html`
     <div class="p-2">
       <p class="flex justify-end">
@@ -62,6 +63,9 @@ class ChatUIElement extends LitElement {
         html`<strong>${message.sender}</strong>`
       }
         </small>
+      </p>
+      <p>
+        ${messageMediaURL ? html`<img class="aspect-square w-3/4 object-cover" src="${messageMediaURL}" alt="${messageMediaURL}" />` : null}
       </p>
       <p>${message.message}</p>
       <div class="flex justify-end">

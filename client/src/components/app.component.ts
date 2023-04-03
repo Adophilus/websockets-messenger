@@ -9,7 +9,7 @@ import { TLoginEvent } from './user-details-modal.component'
 import { IRegisterRecipientEvent } from './lobby-ui.component'
 import { WebSocketMessage } from '../../../server/src/types'
 import JwtDecode from 'jwt-decode'
-import { TToken } from '../../../server/src/types'
+import { TToken, Media } from '../../../server/src/types'
 import Storage from '../utils/Storage'
 import { Chat } from '../../../server/src/types'
 import Router from 'simple-router'
@@ -121,19 +121,28 @@ class AppElement extends LitElement {
   }
 
   sendMessage({ message, file }: { message: string, file: File | null }) {
-    let base64EncodedFileData = null
     const reader = new FileReader()
     if (file) {
       reader.readAsDataURL(file)
       reader.addEventListener('loadend', () => {
-        base64EncodedFileData = reader.result?.toString()
-        // base64EncodedFileData = base64EncodedFileData.replace(/^data:.*?\/.*?;base64,/, '')
-        this.ws.emit(WebSocketMessage.SEND_MESSAGE, { message, user: this.recipient.username, file: base64EncodedFileData }, ({ chat }: { chat: Chat }) => {
-          this.messages = this.messages.concat(new Message({ id: chat.id, message: chat.message, sender: chat.senderUsername, recipient: chat.recipientUsername, has_read: chat.has_read, image: null }))
+        const base64EncodedFileData = reader.result?.toString().replace(/^data:.*?\/.*?;base64,/, '') ?? ''
+        const media: Media = {
+          name: file.name,
+          size: file.size,
+          data: base64EncodedFileData,
+          mimetype: file.type
+        }
+        this.ws.emit(WebSocketMessage.SEND_MESSAGE, { message, user: this.recipient.username, media }, ({ chat }: { chat: Chat }) => {
+          this.messages = this.messages.concat(new Message({ id: chat.id, message: chat.message, sender: chat.senderUsername, recipient: chat.recipientUsername, has_read: chat.has_read, media: chat.media }))
         })
       })
       reader.addEventListener('error', () => {
-        base64EncodedFileData = null
+        console.warn('error occurred while reading file')
+      })
+    }
+    else {
+      this.ws.emit(WebSocketMessage.SEND_MESSAGE, { message, user: this.recipient.username, media: null }, ({ chat }: { chat: Chat }) => {
+        this.messages = this.messages.concat(new Message({ id: chat.id, message: chat.message, sender: chat.senderUsername, recipient: chat.recipientUsername, has_read: chat.has_read, media: chat.media }))
       })
     }
   }
@@ -159,7 +168,7 @@ class AppElement extends LitElement {
   private registerRecipient(recipient: Recipient) {
     this.recipient = recipient
     this.ws.emit(WebSocketMessage.FETCH_CONVERSATION_WITH_USER, { user: recipient.username }, ({ chats }: { chats: Chat[] }) => {
-      this.messages = chats.map(chat => new Message({ id: chat.id, sender: chat.senderUsername, recipient: chat.recipientUsername, has_read: chat.has_read, message: chat.message, image: null })).reverse()
+      this.messages = chats.map(chat => new Message({ id: chat.id, sender: chat.senderUsername, recipient: chat.recipientUsername, has_read: chat.has_read, message: chat.message, media: chat.media })).reverse()
     })
   }
 
