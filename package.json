@@ -4,7 +4,7 @@
   "description": "A project for demoing my research on websockets",
   "scripts": {
     "build:client": "cd client && pnpm build",
-    "build:server": "cd server && pnpm build:all",
+    "build:server": "cd server && pnpm build",
     "build": "pnpm build:client && pnpm build:server",
     "start": "cd server && pnpm start"
   },
