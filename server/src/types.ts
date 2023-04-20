@@ -35,6 +35,7 @@ export enum WebSocketMessage {
   FETCH_UNREAD_CHATS_COUNT = "fetch-unread-chats-count",
   UNREAD_CHATS_COUNT = "unread-chats-count",
   READ_CHAT = "read-chat",
+  DELETE_CHAT = "delete-chat",
   CHAT = "chat",
   SEND_MESSAGE = "send-message",
   USER_JOIN = "user-join",
