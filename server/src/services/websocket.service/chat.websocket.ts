@@ -133,11 +133,7 @@ export default (io: Namespace, parentLogger: Logger<ILogObj>) => {
           `{${userDetails}} sent ✉  '${effectiveMessage}' -> ${user}`
         )
 
-        let mediaPath = null
-        if (media) {
-          mediaPath = StorageService.upload(media)
-          logger.warn(mediaPath)
-        }
+        let mediaPath = !!media ? await StorageService.upload(media) : null
 
         const chat = await prisma.message.create({
           data: {
@@ -194,8 +190,23 @@ export default (io: Namespace, parentLogger: Logger<ILogObj>) => {
         if (receiver)
           io.to(receiver.sid).emit(WebSocketMessage.READ_CHAT, { id: chat.id, user: sender.username })
         cb()
-      }
-    )
+      })
+
+    socket.on(WebSocketMessage.DELETE_CHAT, async ({ id }: { id: number }, cb) => {
+      logger.trace(`${userDetails} wishes to delete chat with id ${id}`)
+
+      const chat = await prisma.message.findFirst({ where: { id, senderUsername: userDetails.username } })
+
+      if (!chat) return cb()
+
+      const receiver = getUserByUsername(chat.recipientUsername)
+
+      await prisma.message.delete({ where: { id } })
+
+      if (receiver)
+        io.to(receiver.sid).emit(WebSocketMessage.DELETE_CHAT, { id })
+      cb()
+    })
 
     socket.on('disconnect', () => {
       logger.info(`${userDetails} has disconnected`)
