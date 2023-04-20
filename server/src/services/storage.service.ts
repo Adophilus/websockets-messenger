@@ -3,12 +3,12 @@ import { Media } from "../types"
 import { v4 as uuidv4 } from 'uuid'
 import config from '../config'
 import path from 'path'
-import fs from 'fs'
+import fs from 'fs/promises'
 
 const logger = new Logger({ name: 'StorageService' })
 
 export default {
-  upload(media: Media): string | null {
+  async upload(media: Media) {
     logger.info(`uploading media: ${media.name}`)
     const buffer = Buffer.from(media.data, "base64")
     const fileExtension = media.mimetype.split("/")[1]
@@ -19,8 +19,14 @@ export default {
 
     const fileName = `${uuidv4()}.${fileExtension}`
     const filePath = path.join(config.upload.path, fileName)
-    fs.createWriteStream(filePath).write(buffer)
+    await fs.writeFile(filePath, buffer, { encoding: 'utf8' })
 
     return filePath
+  },
+  async remove(mediaPath: string) {
+    const filePath = path.join(config.upload.path, mediaPath)
+    if (await fs.stat(filePath)) {
+      await fs.unlink(filePath)
+    }
   }
 }
