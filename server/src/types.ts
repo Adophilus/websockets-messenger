@@ -43,6 +43,7 @@ export enum WebSocketMessage {
   AUTH_FAILED = "auth-failed",
   UPLOAD_MEDIA = "upload-media",
   WAIT_FOR_USER = "wait-for-user",
+  STOP_WAITING_FOR_USER = "stop-waiting-for-user",
   USER_ONLINE = "user-online",
   USER_OFFLINE = "user-offline"
 }

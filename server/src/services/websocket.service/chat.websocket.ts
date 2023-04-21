@@ -5,7 +5,7 @@ import { Media, UserPolicy, WebSocketMessage } from '../../types'
 import TokenService from '../token.service'
 import StorageService from '../storage.service'
 import UserRegistry, { UserDetails } from './user-registry.service'
-import NotificationsService from './notifications.service'
+import NotificationsService, { WaitingEvent } from './notifications.service'
 
 const getUnreadMessagesBetween = async ({ sender, recipient }: { sender: string, recipient: string }) => {
   const aggregation = await prisma.message.aggregate({
@@ -21,7 +21,7 @@ const getUnreadMessagesBetween = async ({ sender, recipient }: { sender: string,
 
 export default (io: Namespace, parentLogger: Logger<ILogObj>) => {
   const logger = parentLogger.getSubLogger({ name: 'ChatWebSocketLogger' })
-  const notificationsService = new NotificationsService(io)
+  const notificationsService = new NotificationsService({ io, logger })
   const userRegistry = new UserRegistry({ notificationsService, logger })
 
   io.use((socket, next) => {
@@ -53,8 +53,6 @@ export default (io: Namespace, parentLogger: Logger<ILogObj>) => {
       sid: socket.id
     })
     userRegistry.registerUser(userDetails)
-
-    // users.forEach((user) => io.to(user.sid).emit(WebSocketMessage.USER_JOIN, { user: userDetails.username }))
 
     socket.on(WebSocketMessage.FETCH_USERS, async (_, cb) => {
       logger.trace(`${userDetails} wishes to retrieve all users`)
@@ -91,6 +89,20 @@ export default (io: Namespace, parentLogger: Logger<ILogObj>) => {
       })
 
       cb({ chats })
+    })
+
+    socket.on(WebSocketMessage.WAIT_FOR_USER, async ({ user }: { user: string }) => {
+      const dbUser = await prisma.user.findFirst({ where: { username: user } })
+      if (!dbUser) return
+
+      notificationsService.registerWaitingUser(user, userDetails)
+      notificationsService.notifyWaitingUser(user, userDetails, WaitingEvent.ONLINE)
+    })
+
+    socket.on(WebSocketMessage.STOP_WAITING_FOR_USER, async ({ user }: { user: string }) => {
+      const awaitedUser = await userRegistry.getUserByUsername(user)
+      if (!awaitedUser) return
+      notificationsService.unregisterWaitingUser(awaitedUser, userDetails)
     })
 
     socket.on(
@@ -156,8 +168,10 @@ export default (io: Namespace, parentLogger: Logger<ILogObj>) => {
           }
         })
 
-        if (receiver)
+        if (receiver) {
           io.to(receiver.sid).emit(WebSocketMessage.READ_CHAT, { id: chat.id, user: userDetails.username })
+          io.to(receiver.sid).emit(WebSocketMessage.UNREAD_CHATS_COUNT, { user: receiver.username, unreadChatsCount: await getUnreadMessagesBetween({ sender: userDetails.username, recipient: receiver.username }) })
+        }
         cb()
       })
 
@@ -177,14 +191,11 @@ export default (io: Namespace, parentLogger: Logger<ILogObj>) => {
       cb()
     })
 
-    socket.on('disconnect', async () => {
+    socket.on('disconnect', () => {
       logger.info(`${userDetails} has disconnected`)
 
-      await userRegistry.unregisterUser(userDetails)
-
-      // users.forEach((user) => {
-      //   io.to(user.sid).emit(WebSocketMessage.USER_LEAVE, { user: userDetails.username })
-      // })
+      notificationsService.unregisterWaitingUserFromAll(userDetails)
+      userRegistry.unregisterUser(userDetails)
     })
   })
 
