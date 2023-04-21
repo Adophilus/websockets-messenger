@@ -1,19 +1,10 @@
 import { Namespace } from 'socket.io'
 import { ILogObj, Logger } from 'tslog'
 import { prisma } from '../database.service'
-import { Media, UserPolicy, TUserDetails, WebSocketMessage } from '../../types'
+import { Media, UserPolicy, WebSocketMessage } from '../../types'
 import TokenService from '../token.service'
 import StorageService from '../storage.service'
-
-let users: TUserDetails[] = []
-
-const getUserBySid = (sid: string) => {
-  return users.find((user) => user.sid === sid)
-}
-
-const getUserByUsername = (username: string) => {
-  return users.find((user) => user.username === username)
-}
+import UserRegistry, { UserDetails } from './user-registry.service'
 
 const getUnreadMessagesBetween = async ({ sender, recipient }: { sender: string, recipient: string }) => {
   const aggregation = await prisma.message.aggregate({
@@ -27,22 +18,9 @@ const getUnreadMessagesBetween = async ({ sender, recipient }: { sender: string,
   return aggregation._count
 }
 
-class UserDetails {
-  declare public username: string
-  declare public sid: string
-
-  constructor({ username, sid }: { username: string, sid: string }) {
-    this.username = username
-    this.sid = sid
-  }
-
-  toString() {
-    return `{${this.username}}`
-  }
-}
-
 export default (io: Namespace, parentLogger: Logger<ILogObj>) => {
   const logger = parentLogger.getSubLogger({ name: 'ChatWebSocketLogger' })
+  const userRegistry = new UserRegistry(logger)
 
   io.use((socket, next) => {
     const tokenData = TokenService.verifyToken(socket.handshake.auth.token)
@@ -72,15 +50,9 @@ export default (io: Namespace, parentLogger: Logger<ILogObj>) => {
       username: socket.handshake.auth.tokenData.username,
       sid: socket.id
     })
+    userRegistry.registerUser(userDetails)
 
-    logger.info(`${socket.id} registered as ${userDetails.username}`)
-
-    const userAlreadyJoined = users.find(user => user.username === userDetails.username)
-    if (userAlreadyJoined)
-      return socket.disconnect(true)
-
-    users.forEach((user) => io.to(user.sid).emit(WebSocketMessage.USER_JOIN, { user: userDetails.username }))
-    users.push(userDetails)
+    // users.forEach((user) => io.to(user.sid).emit(WebSocketMessage.USER_JOIN, { user: userDetails.username }))
 
     socket.on(WebSocketMessage.FETCH_USERS, async (_, cb) => {
       logger.trace(`${userDetails} wishes to retrieve all users`)
@@ -88,10 +60,6 @@ export default (io: Namespace, parentLogger: Logger<ILogObj>) => {
       const dbUsers = await prisma.user.findMany()
       cb({
         users: dbUsers.filter(user => user.username !== userDetails.username)
-          .map((user) => ({
-            username: user.username,
-            isOnline: users.find(onlineUser => onlineUser.username === user.username)
-          }))
       })
     })
 
@@ -147,7 +115,7 @@ export default (io: Namespace, parentLogger: Logger<ILogObj>) => {
 
         cb({ chat })
 
-        const receiver = getUserByUsername(user)
+        const receiver = await userRegistry.getUserByUsername(user)
         if (!receiver) return
 
         io.to(receiver.sid).emit(WebSocketMessage.CHAT, { chat })
@@ -159,7 +127,6 @@ export default (io: Namespace, parentLogger: Logger<ILogObj>) => {
       WebSocketMessage.READ_CHAT,
       async ({ id: chatId }: { id: string }, cb) => {
         const id = parseInt(chatId)
-        const sender = getUserBySid(socket.id)
         const chat = await prisma.message.findFirst({
           where: {
             id
@@ -169,13 +136,13 @@ export default (io: Namespace, parentLogger: Logger<ILogObj>) => {
             recipient: true
           }
         })
-        if (!sender || !chat) return
-        if (chat.recipientUsername !== sender.username) return
+        if (!chat) return
+        if (chat.recipientUsername !== userDetails.username) return
 
-        const receiver = getUserByUsername(chat.senderUsername)
+        const receiver = await userRegistry.getUserByUsername(chat.senderUsername)
 
         logger.trace(
-          `${sender.sid}:${userDetails.username} -> has read message '${chat.id}:${chat.message}'`
+          `${userDetails.sid}:${userDetails.username} -> has read message '${chat.id}:${chat.message}'`
         )
 
         await prisma.message.update({
@@ -188,7 +155,7 @@ export default (io: Namespace, parentLogger: Logger<ILogObj>) => {
         })
 
         if (receiver)
-          io.to(receiver.sid).emit(WebSocketMessage.READ_CHAT, { id: chat.id, user: sender.username })
+          io.to(receiver.sid).emit(WebSocketMessage.READ_CHAT, { id: chat.id, user: userDetails.username })
         cb()
       })
 
@@ -199,7 +166,7 @@ export default (io: Namespace, parentLogger: Logger<ILogObj>) => {
 
       if (!chat) return cb()
 
-      const receiver = getUserByUsername(chat.recipientUsername)
+      const receiver = await userRegistry.getUserByUsername(chat.recipientUsername)
 
       await prisma.message.delete({ where: { id } })
 
@@ -208,14 +175,14 @@ export default (io: Namespace, parentLogger: Logger<ILogObj>) => {
       cb()
     })
 
-    socket.on('disconnect', () => {
+    socket.on('disconnect', async () => {
       logger.info(`${userDetails} has disconnected`)
 
-      users = users.filter(user => user.username !== userDetails.username)
+      await userRegistry.unregisterUser(userDetails)
 
-      users.forEach((user) => {
-        io.to(user.sid).emit(WebSocketMessage.USER_LEAVE, { user: userDetails.username })
-      })
+      // users.forEach((user) => {
+      //   io.to(user.sid).emit(WebSocketMessage.USER_LEAVE, { user: userDetails.username })
+      // })
     })
   })
 
