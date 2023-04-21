@@ -1,5 +1,6 @@
 import { ILogObj, Logger } from "tslog";
 import { TUserDetails } from "../../types";
+import NotificationsService, { WaitingEvent } from "./notifications.service";
 
 export class UserDetails implements TUserDetails {
   declare public username: string
@@ -18,21 +19,29 @@ export class UserDetails implements TUserDetails {
 export class UserRegistry {
   users: TUserDetails[] = []
   declare private logger: Logger<ILogObj>
+  declare private notificationsService: NotificationsService
 
-  constructor(parentLogger: Logger<ILogObj>) {
-    this.logger = parentLogger.getSubLogger({ name: 'UserRegistryLogger' })
+  constructor({ logger, notificationsService }: { logger: Logger<ILogObj>, notificationsService: NotificationsService }) {
+    this.logger = logger.getSubLogger({ name: 'UserRegistryLogger' })
+    this.notificationsService = notificationsService
   }
 
-  async registerUser(userDetails: TUserDetails) {
-    if (!this.users.find((_userDetails) => _userDetails.username === userDetails.username && _userDetails.sid === userDetails.sid)) {
-      this.users.push(userDetails)
-      this.logger.info(`${userDetails.sid} registered as ${userDetails.username}`)
+  async registerUser(unregisteredUser: TUserDetails) {
+    const [registeredUser,] = await this.getUser(unregisteredUser)
+    if (!registeredUser) {
+      this.users.push(unregisteredUser)
+      this.logger.info(`${unregisteredUser.sid} just got registered as ${unregisteredUser.username}`)
+      this.notificationsService.notifyWaitingUsers(unregisteredUser, WaitingEvent.ONLINE)
     }
   }
 
-  async unregisterUser(userDetails: TUserDetails) {
-    const [_, index] = await this.getUser(userDetails)
-    this.users.splice(index, 1)
+  async unregisterUser(registeredUser: TUserDetails) {
+    const [_registeredUser, index] = await this.getUser(registeredUser)
+    if (!!_registeredUser) {
+      this.users.splice(index, 1)
+      this.logger.info(`${_registeredUser.username} just got unregistered`)
+      this.notificationsService.notifyWaitingUsers(_registeredUser, WaitingEvent.OFFLINE)
+    }
   }
 
   async getUser(userDetails: TUserDetails): Promise<[TUserDetails | null, number]> {
@@ -41,7 +50,7 @@ export class UserRegistry {
       index = i
       return _userDetails.username === userDetails.username && _userDetails.sid === userDetails.sid
     })
-    return [foundUserDetails ? foundUserDetails : null, index]
+    return !!foundUserDetails ? [foundUserDetails, index] : [null, -1]
   }
 
   async getUserByUsername(username: string) {

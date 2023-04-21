@@ -5,6 +5,7 @@ import { Media, UserPolicy, WebSocketMessage } from '../../types'
 import TokenService from '../token.service'
 import StorageService from '../storage.service'
 import UserRegistry, { UserDetails } from './user-registry.service'
+import NotificationsService from './notifications.service'
 
 const getUnreadMessagesBetween = async ({ sender, recipient }: { sender: string, recipient: string }) => {
   const aggregation = await prisma.message.aggregate({
@@ -20,7 +21,8 @@ const getUnreadMessagesBetween = async ({ sender, recipient }: { sender: string,
 
 export default (io: Namespace, parentLogger: Logger<ILogObj>) => {
   const logger = parentLogger.getSubLogger({ name: 'ChatWebSocketLogger' })
-  const userRegistry = new UserRegistry(logger)
+  const notificationsService = new NotificationsService(io)
+  const userRegistry = new UserRegistry({ notificationsService, logger })
 
   io.use((socket, next) => {
     const tokenData = TokenService.verifyToken(socket.handshake.auth.token)

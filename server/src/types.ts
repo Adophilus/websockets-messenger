@@ -41,7 +41,10 @@ export enum WebSocketMessage {
   USER_JOIN = "user-join",
   USER_LEAVE = "user-leave",
   AUTH_FAILED = "auth-failed",
-  UPLOAD_MEDIA = "upload-media"
+  UPLOAD_MEDIA = "upload-media",
+  WAIT_FOR_USER = "wait-for-user",
+  USER_ONLINE = "user-online",
+  USER_OFFLINE = "user-offline"
 }
 
 export type { Message as Chat }
