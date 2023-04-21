@@ -31,7 +31,7 @@ export class UserRegistry {
     if (!registeredUser) {
       this.users.push(unregisteredUser)
       this.logger.info(`${unregisteredUser.sid} just got registered as ${unregisteredUser.username}`)
-      this.notificationsService.notifyWaitingUsers(unregisteredUser, WaitingEvent.ONLINE)
+      this.notificationsService.notifyWaitingUsers(unregisteredUser.username, WaitingEvent.ONLINE)
     }
   }
 
@@ -40,7 +40,7 @@ export class UserRegistry {
     if (!!_registeredUser) {
       this.users.splice(index, 1)
       this.logger.info(`${_registeredUser.username} just got unregistered`)
-      this.notificationsService.notifyWaitingUsers(_registeredUser, WaitingEvent.OFFLINE)
+      this.notificationsService.notifyWaitingUsers(_registeredUser.username, WaitingEvent.OFFLINE)
     }
   }
 

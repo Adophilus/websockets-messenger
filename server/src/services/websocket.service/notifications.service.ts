@@ -8,10 +8,7 @@ export enum WaitingEvent {
 }
 
 type TAwaitedUsers = {
-  [k: TUserDetails['username']]: {
-    user: TUserDetails,
-    users: TUserDetails[]
-  }
+  [k: TUserDetails['username']]: TUserDetails[]
 }
 
 export class NotificationsService {
@@ -24,38 +21,37 @@ export class NotificationsService {
     this.logger = logger
   }
 
-  async registerWaitingUser(awaitedUser: TUserDetails, waitingUser: TUserDetails) {
-    if (!this.awaitedUsers[awaitedUser.username])
-      this.awaitedUsers[awaitedUser.username] = { user: awaitedUser, users: [] }
+  async registerWaitingUser(awaitedUser: string, waitingUser: TUserDetails) {
+    if (!this.awaitedUsers[awaitedUser])
+      this.awaitedUsers[awaitedUser] = []
     const [_waitingUser,] = await this.getWaitingUser(awaitedUser, waitingUser)
     if (_waitingUser) return
 
     this.logger.trace(`${waitingUser} wants to be alerted when ${awaitedUser} comes online`)
-    this.awaitedUsers[awaitedUser.username].users.push(waitingUser)
+    this.awaitedUsers[awaitedUser].push(waitingUser)
   }
 
-  async unregisterWaitingUser(awaitedUser: TUserDetails, waitingUser: TUserDetails) {
+  async unregisterWaitingUser(awaitedUser: string, waitingUser: TUserDetails) {
     const [_waitingUser, index] = await this.getWaitingUser(awaitedUser, waitingUser)
     if (!_waitingUser) return
 
     this.logger.trace(`${waitingUser} no longer wants to be alerted when ${awaitedUser} comes online`)
-    this.awaitedUsers[awaitedUser.username].users.splice(index, 1)
+    this.awaitedUsers[awaitedUser].splice(index, 1)
   }
 
   async unregisterWaitingUserFromAll(waitingUser: TUserDetails) {
-    for (const awaitedUserUsername in this.awaitedUsers) {
-      const awaitedUser = this.awaitedUsers[awaitedUserUsername].user
+    for (const awaitedUser in this.awaitedUsers) {
       this.unregisterWaitingUser(awaitedUser, waitingUser)
     }
   }
 
-  async getWaitingUser(awaitedUser: TUserDetails, waitingUser: TUserDetails): Promise<[TUserDetails | null, number]> {
+  async getWaitingUser(awaitedUser: string, waitingUser: TUserDetails): Promise<[TUserDetails | null, number]> {
     let index = -1
 
-    if (!this.awaitedUsers[awaitedUser.username])
+    if (!this.awaitedUsers[awaitedUser])
       return [null, index]
 
-    const foundWaitingUser = this.awaitedUsers[awaitedUser.username].users.find((_waitingUser, i) => {
+    const foundWaitingUser = this.awaitedUsers[awaitedUser].find((_waitingUser, i) => {
       index = i
       return _waitingUser.username === waitingUser.username && _waitingUser.sid === waitingUser.sid
     })
@@ -63,7 +59,7 @@ export class NotificationsService {
     return !!foundWaitingUser ? [foundWaitingUser, index] : [null, -1]
   }
 
-  async notifyWaitingUser(awaitedUser: TUserDetails, waitingUser: TUserDetails, event: WaitingEvent) {
+  async notifyWaitingUser(awaitedUser: string, waitingUser: TUserDetails, event: WaitingEvent) {
     let messagingEvent = WebSocketMessage.USER_ONLINE
     switch (event) {
       case WaitingEvent.ONLINE:
@@ -74,14 +70,14 @@ export class NotificationsService {
         break
     }
     this.logger.trace(`${waitingUser} is going to be alerted because ${awaitedUser} has come online`)
-    this.io.to(waitingUser.sid).emit(messagingEvent, { user: awaitedUser.username })
+    this.io.to(waitingUser.sid).emit(messagingEvent, { user: awaitedUser })
   }
 
-  async notifyWaitingUsers(awaitedUser: TUserDetails, event: WaitingEvent) {
-    const _awaitedUser = this.awaitedUsers[awaitedUser.username]
+  async notifyWaitingUsers(awaitedUser: string, event: WaitingEvent) {
+    const _awaitedUser = this.awaitedUsers[awaitedUser]
     if (!_awaitedUser) return
 
-    const waitingUsers = _awaitedUser.users
+    const waitingUsers = _awaitedUser
     waitingUsers.forEach(waitingUser => this.notifyWaitingUser(awaitedUser, waitingUser, event))
   }
 }

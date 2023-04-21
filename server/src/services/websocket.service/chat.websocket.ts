@@ -102,7 +102,7 @@ export default (io: Namespace, parentLogger: Logger<ILogObj>) => {
     socket.on(WebSocketMessage.STOP_WAITING_FOR_USER, async ({ user }: { user: string }) => {
       const awaitedUser = await userRegistry.getUserByUsername(user)
       if (!awaitedUser) return
-      notificationsService.unregisterWaitingUser(awaitedUser, userDetails)
+      notificationsService.unregisterWaitingUser(awaitedUser.username, userDetails)
     })
 
     socket.on(
@@ -133,7 +133,7 @@ export default (io: Namespace, parentLogger: Logger<ILogObj>) => {
         if (!receiver) return
 
         io.to(receiver.sid).emit(WebSocketMessage.CHAT, { chat })
-        io.to(receiver.sid).emit(WebSocketMessage.UNREAD_CHATS_COUNT, { user: receiver.username, unreadChatsCount: await getUnreadMessagesBetween({ sender: userDetails.username, recipient: receiver.username }) })
+        io.to(receiver.sid).emit(WebSocketMessage.UNREAD_CHATS_COUNT, { user: userDetails.username, unreadChatsCount: await getUnreadMessagesBetween({ sender: userDetails.username, recipient: receiver.username }) })
       }
     )
 
@@ -168,9 +168,9 @@ export default (io: Namespace, parentLogger: Logger<ILogObj>) => {
           }
         })
 
+        io.to(userDetails.sid).emit(WebSocketMessage.UNREAD_CHATS_COUNT, { user: chat.senderUsername, unreadChatsCount: await getUnreadMessagesBetween({ sender: chat.senderUsername, recipient: userDetails.username }) })
         if (receiver) {
           io.to(receiver.sid).emit(WebSocketMessage.READ_CHAT, { id: chat.id, user: userDetails.username })
-          io.to(receiver.sid).emit(WebSocketMessage.UNREAD_CHATS_COUNT, { user: receiver.username, unreadChatsCount: await getUnreadMessagesBetween({ sender: userDetails.username, recipient: receiver.username }) })
         }
         cb()
       })
