@@ -194,10 +194,16 @@ class AppElement extends LitElement {
       })
 
       this.ws.emit(WebSocketMessage.FETCH_USERS, {}, ({ users }: { users: { username: string, isOnline: boolean }[] }) => {
-        this.recipients = users.map(user => new Recipient({ username: user.username, unreadChatsCount: 0, isOnline: user.isOnline }))
+        this.recipients = users.map(user => {
+          this.ws.emit(WebSocketMessage.WAIT_FOR_USER, { user: user.username })
+          return new Recipient({ username: user.username, unreadChatsCount: 0, isOnline: user.isOnline })
+        })
       })
 
       this.ws.on(WebSocketMessage.CHAT, ({ chat }: { chat: Message }) => {
+        const recipient = this.recipients.find(recipient => recipient.username === chat.recipient)
+        if (!recipient) return
+
         if (chat.sender === this.recipient.username) {
           this.messages = this.messages.concat(new Message(chat))
         }
@@ -210,7 +216,7 @@ class AppElement extends LitElement {
             : message)
       })
 
-      this.ws.on(WebSocketMessage.USER_LEAVE, ({ user }: { user: string }) => {
+      this.ws.on(WebSocketMessage.USER_OFFLINE, ({ user }: { user: string }) => {
         this.recipients = this.recipients.map(recipient => {
           if (recipient.username === user) {
             recipient.isOnline = false
@@ -219,7 +225,7 @@ class AppElement extends LitElement {
         })
       })
 
-      this.ws.on(WebSocketMessage.USER_JOIN, ({ user }: { user: string }) => {
+      this.ws.on(WebSocketMessage.USER_ONLINE, ({ user }: { user: string }) => {
         let hasRegisteredUser = false
         this.recipients = this.recipients.map(recipient => {
           if (recipient.username === user) {
