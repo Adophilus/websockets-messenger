@@ -32,6 +32,7 @@ model AwaitingUser {
   id                  Int    @id @default(autoincrement())
   awaitedUserUsername String
   waitingUserUsername String
+  sid                 String
 
   awaitedUser User @relation("AwaitedUser", fields: [awaitedUserUsername], references: [username])
   waitingUser User @relation("WaitingUser", fields: [waitingUserUsername], references: [username])
