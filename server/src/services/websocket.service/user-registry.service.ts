@@ -24,6 +24,7 @@ export class UserRegistry {
   constructor({ logger, notificationsService }: { logger: Logger<ILogObj>, notificationsService: NotificationsService }) {
     this.logger = logger.getSubLogger({ name: 'UserRegistryLogger' })
     this.notificationsService = notificationsService
+    prisma.onlineUser.deleteMany().then(() => this.logger.info('Deleted all online users')).catch(this.logger.warn)
   }
 
   async registerUser(unregisteredUser: TUserDetails) {

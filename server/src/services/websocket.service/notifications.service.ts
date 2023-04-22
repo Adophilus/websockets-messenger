@@ -1,62 +1,69 @@
 import { Namespace } from "socket.io";
+import { prisma } from '../database.service'
 import { ILogObj, Logger } from "tslog";
 import { TUserDetails, WebSocketMessage } from "../../types";
+import { UserDetails } from "./user-registry.service";
 
 export enum WaitingEvent {
   ONLINE = 'online',
   OFFLINE = 'offline'
 }
 
-type TAwaitedUsers = {
-  [k: TUserDetails['username']]: TUserDetails[]
-}
-
 export class NotificationsService {
   declare private io: Namespace
   declare private logger: Logger<ILogObj>
-  private awaitedUsers: TAwaitedUsers = {}
 
   constructor({ io, logger }: { io: Namespace, logger: Logger<ILogObj> }) {
     this.io = io
-    this.logger = logger
+    this.logger = logger.getSubLogger({ name: 'NotificationsServiceLogger' })
+    prisma.awaitingUser.deleteMany().then(() => this.logger.info('Deleted all awaiting users')).catch(this.logger.warn)
   }
 
   async registerWaitingUser(awaitedUser: string, waitingUser: TUserDetails) {
-    if (!this.awaitedUsers[awaitedUser])
-      this.awaitedUsers[awaitedUser] = []
-    const [_waitingUser,] = await this.getWaitingUser(awaitedUser, waitingUser)
-    if (_waitingUser) return
+    const awaitingUser = await this.getWaitingUser(awaitedUser, waitingUser)
+    if (awaitingUser) return
+
+    await prisma.awaitingUser.create({
+      data: {
+        awaitedUserUsername: awaitedUser,
+        waitingUserUsername: waitingUser.username,
+        sid: waitingUser.sid
+      }
+    })
 
     this.logger.trace(`${waitingUser} wants to be alerted when ${awaitedUser} comes online`)
-    this.awaitedUsers[awaitedUser].push(waitingUser)
   }
 
   async unregisterWaitingUser(awaitedUser: string, waitingUser: TUserDetails) {
-    const [_waitingUser, index] = await this.getWaitingUser(awaitedUser, waitingUser)
-    if (!_waitingUser) return
+    const awaitingUser = await this.getWaitingUser(awaitedUser, waitingUser)
+    if (!awaitingUser) return
+
+    await prisma.awaitingUser.deleteMany({
+      where: {
+        awaitedUserUsername: awaitedUser,
+        waitingUserUsername: waitingUser.username,
+        sid: waitingUser.sid
+      }
+    })
 
     this.logger.trace(`${waitingUser} no longer wants to be alerted when ${awaitedUser} comes online`)
-    this.awaitedUsers[awaitedUser].splice(index, 1)
   }
 
   async unregisterWaitingUserFromAll(waitingUser: TUserDetails) {
-    for (const awaitedUser in this.awaitedUsers) {
-      this.unregisterWaitingUser(awaitedUser, waitingUser)
-    }
+    await prisma.awaitingUser.deleteMany({
+      where: {
+        waitingUserUsername: waitingUser.username
+      }
+    })
   }
 
-  async getWaitingUser(awaitedUser: string, waitingUser: TUserDetails): Promise<[TUserDetails | null, number]> {
-    let index = -1
-
-    if (!this.awaitedUsers[awaitedUser])
-      return [null, index]
-
-    const foundWaitingUser = this.awaitedUsers[awaitedUser].find((_waitingUser, i) => {
-      index = i
-      return _waitingUser.username === waitingUser.username && _waitingUser.sid === waitingUser.sid
+  async getWaitingUser(awaitedUser: string, waitingUser: TUserDetails) {
+    return await prisma.awaitingUser.findFirst({
+      where: {
+        awaitedUserUsername: awaitedUser,
+        waitingUserUsername: waitingUser.username
+      }
     })
-
-    return !!foundWaitingUser ? [foundWaitingUser, index] : [null, -1]
   }
 
   async notifyWaitingUser(awaitedUser: string, waitingUser: TUserDetails, event: WaitingEvent) {
@@ -74,11 +81,16 @@ export class NotificationsService {
   }
 
   async notifyWaitingUsers(awaitedUser: string, event: WaitingEvent) {
-    const _awaitedUser = this.awaitedUsers[awaitedUser]
-    if (!_awaitedUser) return
+    const waitingUsers = await prisma.awaitingUser.findMany({
+      where: {
+        awaitedUserUsername: awaitedUser
+      }
+    })
+    if (!waitingUsers) return
 
-    const waitingUsers = _awaitedUser
-    waitingUsers.forEach(waitingUser => this.notifyWaitingUser(awaitedUser, waitingUser, event))
+    for (const waitingUser of waitingUsers) {
+      this.notifyWaitingUser(awaitedUser, new UserDetails({ username: waitingUser.waitingUserUsername, sid: waitingUser.sid }), event)
+    }
   }
 }
 
