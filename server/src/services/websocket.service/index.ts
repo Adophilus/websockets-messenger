@@ -15,7 +15,8 @@ export default (server: http.Server, parentLogger: Logger<ILogObj>) => {
 
   const logger = parentLogger.getSubLogger({ name: 'WebSocketLogger' })
 
-  ChatWebsocket(io.of('/chat'), logger);
 
-  return io
+  return {
+    chat: ChatWebsocket(io.of('/chat'), logger)
+  }
 }

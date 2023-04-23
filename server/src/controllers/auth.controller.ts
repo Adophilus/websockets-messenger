@@ -19,6 +19,7 @@ export async function register(req: Request, res: Response) {
     })
 
     res.locals.logger.info(`new account created for '${user.username}'`)
+    res.locals.websocket.chat.userJoin(username)
 
     return res
       .status(StatusCodes.CREATED)
