@@ -131,6 +131,10 @@ export default (io: Namespace, parentLogger: Logger<ILogObj>) => {
 
         const receiver = await userRegistry.getUserByUsername(user)
         if (!receiver) return
+        logger.trace(`The receiver of the message ✉ is ${JSON.stringify(receiver)}`)
+        logger.trace(`Current sockets:`)
+        const currentSockets = await io.fetchSockets()
+        logger.trace(currentSockets.map(socket => socket.id))
 
         io.to(receiver.sid).emit(WebSocketMessage.CHAT, { chat })
         io.to(receiver.sid).emit(WebSocketMessage.UNREAD_CHATS_COUNT, { user: userDetails.username, unreadChatsCount: await getUnreadMessagesBetween({ sender: userDetails.username, recipient: receiver.username }) })

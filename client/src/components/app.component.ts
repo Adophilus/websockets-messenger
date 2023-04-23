@@ -200,12 +200,9 @@ class AppElement extends LitElement {
         })
       })
 
-      this.ws.on(WebSocketMessage.CHAT, ({ chat }: { chat: Message }) => {
-        const recipient = this.recipients.find(recipient => recipient.username === chat.recipient)
-        if (!recipient) return
-
-        if (chat.sender === this.recipient.username) {
-          this.messages = this.messages.concat(new Message(chat))
+      this.ws.on(WebSocketMessage.CHAT, ({ chat }: { chat: Chat }) => {
+        if (chat.senderUsername === this.recipient.username) {
+          this.messages = this.messages.concat(new Message({ id: chat.id, sender: chat.senderUsername, recipient: chat.recipientUsername, message: chat.message, media: chat.media, has_read: chat.has_read }))
         }
       })
 
