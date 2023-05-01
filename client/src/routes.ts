@@ -1,7 +1,7 @@
 const routes = [
   '/lobby',
   '/chat',
-  '/register'
+  '/register',
   '/'
 ]
 
