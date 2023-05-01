@@ -1,3 +1,4 @@
 export default {
-  build: '../config/build'
+  build: './frontend',
+  main: 'index.html'
 }
