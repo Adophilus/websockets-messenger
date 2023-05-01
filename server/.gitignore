@@ -1,6 +1,6 @@
 node_modules
 # Keep environment variables out of version control
 .env
-./frontend
+frontend
 ./prisma/db.sqlite3
 ./prisma/db.sqlite3-journal
