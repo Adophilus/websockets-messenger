@@ -1,7 +1,8 @@
 const routes = [
-  '/',
   '/lobby',
-  '/chat'
+  '/chat',
+  '/register'
+  '/'
 ]
 
 export default routes
