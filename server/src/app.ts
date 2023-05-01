@@ -4,7 +4,6 @@ dotenv.config()
 import path from 'path'
 import express from 'express'
 import cors from 'cors'
-import morgan from 'morgan'
 import bodyParser from 'body-parser'
 import { ILogObj, Logger } from 'tslog'
 import http from 'http'
@@ -28,8 +27,7 @@ app.use(bodyParser.urlencoded({ extended: true }))
 app.use(express.json())
 app.use(LoggerMiddleware(logger))
 app.use(WebSocketMiddleware(websocketService))
-app.use('/api', morgan('combined'))
-app.use('/api', router)
+app.use('/', router)
 
 
 const start = async () => {

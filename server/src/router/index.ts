@@ -1,10 +1,10 @@
 import { Router } from "express";
 import AssetsRouter from './assets.router'
-import AuthRouter from './auth.router'
+import ApiRouter from './api.router'
 
 const router = Router()
 
 router.use('/', AssetsRouter)
-router.use('/auth', AuthRouter)
+router.use('/api', ApiRouter)
 
 export default router
