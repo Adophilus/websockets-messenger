@@ -1,8 +1,13 @@
 import express, { Router } from 'express'
 import routes from '../../../client/src/routes'
+import path from 'path'
+import config from '@/config'
 
-const router = Router()
+const AssetsRouter = Router()
 
-router.get(routes, express.static('./frontend/index.html'))
+AssetsRouter.use(express.static(path.resolve(config.frontend.build)))
+AssetsRouter.use(`/${config.upload.path}`, express.static(path.resolve(config.upload.path)))
 
-export default router
+AssetsRouter.get(routes, express.static(path.join(path.resolve(config.frontend.build), config.frontend.main)))
+
+export default AssetsRouter
