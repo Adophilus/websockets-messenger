@@ -2,9 +2,10 @@ import morgan from 'morgan'
 import { Router } from "express";
 import AuthRouter from './auth.router'
 
-const router = Router()
+const ApiRouter = Router()
 
-router.use(morgan('combined'))
-router.use('/auth', AuthRouter)
+ApiRouter.use(morgan('combined'))
 
-export default router
+ApiRouter.use('/auth', AuthRouter)
+
+export default ApiRouter
