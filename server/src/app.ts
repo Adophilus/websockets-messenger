@@ -20,8 +20,6 @@ const logger = new Logger<ILogObj>()
 
 const websocketService = WebSocketService(server, logger)
 
-app.use(express.static(path.resolve(config.frontend.build)))
-app.use(`/${config.upload.path}`, express.static(path.resolve(config.upload.path)))
 app.use(cors())
 app.use(bodyParser.urlencoded({ extended: true }))
 app.use(express.json())
