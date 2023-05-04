@@ -4,8 +4,28 @@ import { v4 as uuidv4 } from 'uuid'
 import config from '../config'
 import path from 'path'
 import fs from 'fs/promises'
+import cloudinary from 'cloudinary'
 
 const logger = new Logger({ name: 'StorageService' })
+const storage = cloudinary.v2
+storage.config({
+  cloud_name: config.upload.cloudinary.cloudName,
+  api_key: config.upload.cloudinary.apiKey,
+  api_secret: config.upload.cloudinary.apiSecret
+})
+
+const uploadAsync = (buffer: Buffer) => {
+  return new Promise((resolve, reject) => {
+    storage.uploader.upload_stream({ resource_type: 'image' }, (error, res) => {
+      if (error) {
+        reject(error)
+        return
+      }
+
+      resolve(res)
+    }).end(buffer)
+  })
+}
 
 export default {
   async upload(media: Media) {
@@ -20,6 +40,9 @@ export default {
     const fileName = `${uuidv4()}.${fileExtension}`
     const filePath = path.join(config.upload.path, fileName)
     await fs.writeFile(filePath, buffer, { encoding: 'utf8' })
+
+    const res = await uploadAsync(buffer)
+    logger.info('res:', res)
 
     return filePath
   },
