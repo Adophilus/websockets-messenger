@@ -15,14 +15,19 @@ storage.config({
 })
 
 const uploadAsync = (buffer: Buffer) => {
-  return new Promise((resolve, reject) => {
+  return new Promise<string>((resolve, reject) => {
     storage.uploader.upload_stream({ resource_type: 'image' }, (error, res) => {
       if (error) {
         reject(error)
         return
       }
 
-      resolve(res)
+      if (!res) {
+        reject(new Error('Upload failed!'))
+        return
+      }
+
+      resolve(res.url)
     }).end(buffer)
   })
 }
@@ -37,14 +42,13 @@ export default {
       return null
     }
 
-    const fileName = `${uuidv4()}.${fileExtension}`
-    const filePath = path.join(config.upload.path, fileName)
-    await fs.writeFile(filePath, buffer, { encoding: 'utf8' })
-
-    const res = await uploadAsync(buffer)
-    logger.info('res:', res)
-
-    return filePath
+    try {
+      return await uploadAsync(buffer)
+    }
+    catch (err) {
+      logger.warn('Media upload failed!', err)
+      return null
+    }
   },
   async remove(mediaPath: string) {
     const filePath = path.join(config.upload.path, mediaPath)

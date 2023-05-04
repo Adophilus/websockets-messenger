@@ -116,6 +116,8 @@ export default (io: Namespace, parentLogger: Logger<ILogObj>) => {
         )
 
         let mediaPath = !!media ? await StorageService.upload(media) : null
+        if (!mediaPath)
+          return
 
         const chat = await prisma.message.create({
           data: {
