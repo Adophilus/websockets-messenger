@@ -6,9 +6,13 @@
     "build:client": "cd client && pnpm build",
     "build:server": "cd server && pnpm build",
     "build": "pnpm build:client && pnpm build:server && mv ./client/build ./server/frontend",
-    "start": "cd server && pnpm start"
+    "start": "cd server && pnpm start",
+    "dev": "node dev"
   },
   "keywords": [],
   "author": "Adophilus",
-  "license": "ISC"
+  "license": "ISC",
+  "devDependencies": {
+    "concurrently": "^8.0.1"
+  }
 }
