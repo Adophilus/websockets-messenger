@@ -125,7 +125,7 @@ export default (io: Namespace, parentLogger: Logger<ILogObj>) => {
             senderUsername: userDetails.username,
             message: effectiveMessage,
             has_read: false,
-            media: mediaPath
+            // media: mediaPath
           }
         })
 
