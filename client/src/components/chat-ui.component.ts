@@ -1,6 +1,7 @@
 import { LitElement, html } from 'lit'
 import { query, customElement, property, state } from 'lit/decorators.js'
 import { repeat } from 'lit/directives/repeat.js'
+import { map } from 'lit/directives/map.js'
 import Message from '../utils/Message'
 import Recipient from '../utils/Recipient'
 
@@ -64,7 +65,7 @@ class ChatUIElement extends LitElement {
         </small>
       </p>
       <p>
-        ${message.media ? html`<img class="aspect-square w-3/4 object-cover" src="${message.media}" alt="${message.media}" />` : null}
+        ${map(message.media, () => html`<img class="aspect-square w-3/4 object-cover" src="${message.media}" alt="${message.media}" />`)}
       </p>
       <p>${message.message}</p>
       <div class="flex justify-end">
