@@ -3,7 +3,7 @@ import os from 'os'
 
 const upload = multer({ dest: os.tmpdir() });
 
-const uploadFiles = upload.array('file', 4)
+const uploadFiles = upload.array('files', 4)
 
 const UploadMiddleware = {
   uploadFiles
