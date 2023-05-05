@@ -9,7 +9,7 @@ import { TLoginEvent } from './user-details-modal.component'
 import { IRegisterRecipientEvent } from './lobby-ui.component'
 import { WebSocketMessage } from '../../../server/src/types'
 import JwtDecode from 'jwt-decode'
-import { TToken, Media } from '../../../server/src/types'
+import { TToken } from '../../../server/src/types'
 import Storage from '../utils/Storage'
 import { Chat } from '../../../server/src/types'
 import Router from 'simple-router'
@@ -121,28 +121,17 @@ class AppElement extends LitElement {
   }
 
   sendMessage({ message, file }: { message: string, file: File | null }) {
-    const reader = new FileReader()
     if (file) {
-      reader.readAsDataURL(file)
-      reader.addEventListener('loadend', () => {
-        const base64EncodedFileData = reader.result?.toString().replace(/^data:.*?\/.*?;base64,/, '') ?? ''
-        const media: Media = {
-          name: file.name,
-          size: file.size,
-          data: base64EncodedFileData,
-          mimetype: file.type
-        }
-        this.ws.emit(WebSocketMessage.SEND_MESSAGE, { message, user: this.recipient.username, media }, ({ chat }: { chat: Chat }) => {
-          this.messages = this.messages.concat(new Message({ id: chat.id, message: chat.message, sender: chat.senderUsername, recipient: chat.recipientUsername, has_read: chat.has_read, media: chat.media }))
-        })
-      })
-      reader.addEventListener('error', () => {
-        console.warn('error occurred while reading file')
+      const media = []
+      console.log(file)
+      return
+      this.ws.emit(WebSocketMessage.SEND_MESSAGE, { message, user: this.recipient.username, media }, ({ chat }: { chat: Chat }) => {
+        this.messages = this.messages.concat(new Message({ id: chat.id, message: chat.message, sender: chat.senderUsername, recipient: chat.recipientUsername, has_read: chat.has_read, media: chat.mediaIds }))
       })
     }
     else {
-      this.ws.emit(WebSocketMessage.SEND_MESSAGE, { message, user: this.recipient.username, media: null }, ({ chat }: { chat: Chat }) => {
-        this.messages = this.messages.concat(new Message({ id: chat.id, message: chat.message, sender: chat.senderUsername, recipient: chat.recipientUsername, has_read: chat.has_read, media: chat.media }))
+      this.ws.emit(WebSocketMessage.SEND_MESSAGE, { message, user: this.recipient.username }, ({ chat }: { chat: Chat }) => {
+        this.messages = this.messages.concat(new Message({ id: chat.id, message: chat.message, sender: chat.senderUsername, recipient: chat.recipientUsername, has_read: chat.has_read, media: chat.mediaIds }))
       })
     }
   }
@@ -168,7 +157,7 @@ class AppElement extends LitElement {
   private registerRecipient(recipient: Recipient) {
     this.recipient = recipient
     this.ws.emit(WebSocketMessage.FETCH_CONVERSATION_WITH_USER, { user: recipient.username }, ({ chats }: { chats: Chat[] }) => {
-      this.messages = chats.map(chat => new Message({ id: chat.id, sender: chat.senderUsername, recipient: chat.recipientUsername, has_read: chat.has_read, message: chat.message, media: chat.media })).reverse()
+      this.messages = chats.map(chat => new Message({ id: chat.id, sender: chat.senderUsername, recipient: chat.recipientUsername, has_read: chat.has_read, message: chat.message, media: chat.mediaIds })).reverse()
     })
   }
 
@@ -212,7 +201,7 @@ class AppElement extends LitElement {
 
       this.ws.on(WebSocketMessage.CHAT, ({ chat }: { chat: Chat }) => {
         if (chat.senderUsername === this.recipient.username) {
-          this.messages = this.messages.concat(new Message({ id: chat.id, sender: chat.senderUsername, recipient: chat.recipientUsername, message: chat.message, media: chat.media, has_read: chat.has_read }))
+          this.messages = this.messages.concat(new Message({ id: chat.id, sender: chat.senderUsername, recipient: chat.recipientUsername, message: chat.message, media: chat.mediaIds, has_read: chat.has_read }))
         }
       })
 
