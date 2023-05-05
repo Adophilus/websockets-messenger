@@ -54,7 +54,7 @@ model Message {
   senderUsername    String
   recipientUsername String
   has_read          Boolean
-  mediaIds          String[]
+  mediaIds          Int[]
   created_at        DateTime @default(now())
   updated_at        DateTime @updatedAt
 
