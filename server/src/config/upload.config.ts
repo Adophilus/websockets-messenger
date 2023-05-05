@@ -1,4 +1,4 @@
-export default {
+const UploadConfig = {
   path: 'public/uploads',
   allowedExtensions: ['jpeg', 'jpg', 'png', 'webm'],
   cloudinary: {
@@ -7,3 +7,5 @@ export default {
     apiSecret: process.env.CLOUDINARY_API_SECRET,
   }
 }
+
+export default UploadConfig
