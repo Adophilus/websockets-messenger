@@ -4,7 +4,7 @@ import { prisma } from '../services/database.service'
 import { ReasonPhrases, StatusCodes } from 'http-status-codes'
 import { Request, Response } from 'express'
 
-export async function register(req: Request, res: Response) {
+async function register(req: Request, res: Response) {
   const { username, password } = req.body
 
   const duplicate = await prisma.user.findFirst({ where: { username } })
@@ -30,7 +30,7 @@ export async function register(req: Request, res: Response) {
   }
 }
 
-export async function login(req: Request, res: Response) {
+async function login(req: Request, res: Response) {
   const { username, password } = req.body
   const user = await prisma.user.findFirst({ where: { username } })
 
@@ -45,3 +45,10 @@ export async function login(req: Request, res: Response) {
     token: TokenService.generateToken(user),
   })
 }
+
+const AuthController = {
+  login,
+  register
+}
+
+export default AuthController
