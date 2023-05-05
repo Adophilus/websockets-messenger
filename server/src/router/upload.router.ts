@@ -4,6 +4,6 @@ import UploadMiddleware from '../middleware/upload.middleware'
 
 const UploadRouter = Router()
 
-UploadRouter.use('/files', UploadMiddleware.uploadFiles, UploadController.uploadFiles)
+UploadRouter.post('/files', UploadMiddleware.uploadFiles, UploadController.uploadFiles)
 
 export default UploadRouter
