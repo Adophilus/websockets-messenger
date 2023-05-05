@@ -31,11 +31,11 @@ async function bootstrap() {
   app.use(LoggerMiddleware(logger))
   app.use(WebSocketMiddleware(websocketService))
 
+  // setup middleware (error handler)
+  app.use(ErrorHandlerMiddleware)
+
   // setup routes
   app.use('/', router)
-
-  // setup error handler
-  app.use(ErrorHandlerMiddleware)
 }
 
 async function start() {
