@@ -2,7 +2,6 @@ import { NextFunction, Request, Response } from 'express'
 import { checkSchema } from 'express-validator'
 import { validationFunction } from '../utils/validation.util'
 import TokenService from '../services/token.service'
-import AuthService from '../services/auth.service'
 import { ReasonPhrases, StatusCodes } from 'http-status-codes'
 
 const register = [
@@ -50,7 +49,7 @@ function isAuthenticated(req: Request, res: Response, next: NextFunction) {
 
   res.locals.token = jwt
 
-  return next()
+  next()
 }
 
 const AuthMiddleware = {

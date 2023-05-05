@@ -1,10 +1,9 @@
 import { NextFunction, Request, Response } from "express";
 import { ReasonPhrases, StatusCodes } from "http-status-codes";
 import { MulterError } from "multer";
-import { ILogObj, Logger } from "tslog";
 
 export default async function ErrorHandlerMiddleware(err: Error, req: Request, res: Response, next: NextFunction) {
-  const logger: Logger<ILogObj> = res.locals.logger
+  const { logger } = res.locals
 
   if (err instanceof MulterError) {
     logger.warn("File upload error:", err.message)
