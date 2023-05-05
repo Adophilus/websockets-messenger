@@ -1,6 +1,9 @@
 import { NextFunction, Request, Response } from 'express'
 import { checkSchema } from 'express-validator'
 import { validationFunction } from '../utils/validation.util'
+import TokenService from '../services/token.service'
+import AuthService from '../services/auth.service'
+import { ReasonPhrases, StatusCodes } from 'http-status-codes'
 
 const register = [
   (req: Request, res: Response, next: NextFunction) => {
@@ -34,9 +37,26 @@ const login = [
   validationFunction
 ]
 
+function isAuthenticated(req: Request, res: Response, next: NextFunction) {
+  if (!req.headers)
+    return res.send(StatusCodes.FORBIDDEN).send({ error: ReasonPhrases.FORBIDDEN })
+  if (!req.headers['Authorization'])
+    return res.send(StatusCodes.FORBIDDEN).send({ error: ReasonPhrases.FORBIDDEN })
+
+  const token = String(req.headers['Authorization']).split(' ')[1]
+  const jwt = TokenService.verifyToken(token)
+  if (!jwt)
+    return res.send(StatusCodes.FORBIDDEN).send({ error: ReasonPhrases.FORBIDDEN })
+
+  res.locals.token = jwt
+
+  return next()
+}
+
 const AuthMiddleware = {
   login,
-  register
+  register,
+  isAuthenticated
 }
 
 export default AuthMiddleware
