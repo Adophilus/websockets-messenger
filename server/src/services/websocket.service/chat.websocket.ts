@@ -1,9 +1,8 @@
 import { Namespace } from 'socket.io'
 import { ILogObj, Logger } from 'tslog'
 import { prisma } from '../database.service'
-import { Media, UserPolicy, WebSocketMessage } from '../../types'
+import { UserPolicy, WebSocketMessage } from '../../types'
 import TokenService from '../token.service'
-import StorageService from '../storage.service'
 import UserRegistry, { UserDetails } from './user-registry.service'
 import NotificationsService, { WaitingEvent } from './notifications.service'
 
@@ -107,7 +106,7 @@ export default (io: Namespace, parentLogger: Logger<ILogObj>) => {
 
     socket.on(
       WebSocketMessage.SEND_MESSAGE,
-      async ({ user, message, media }: { user: string; message: string, media: Media | null }, cb) => {
+      async ({ user, message, media }: { user: string; message: string, media: number[] }, cb) => {
         const effectiveMessage = message.trimEnd()
         if (!effectiveMessage) return
 
@@ -115,27 +114,28 @@ export default (io: Namespace, parentLogger: Logger<ILogObj>) => {
           `{${userDetails}} sent ✉  '${effectiveMessage}' -> ${user}`
         )
 
-        let mediaPath = !!media ? await StorageService.upload(media) : null
-        if (!mediaPath)
-          return
+        try {
+          const chat = await prisma.message.create({
+            data: {
+              recipientUsername: user,
+              senderUsername: userDetails.username,
+              message: effectiveMessage,
+              has_read: false,
+              mediaIds: media
+            }
+          })
+          cb({ chat })
 
-        const chat = await prisma.message.create({
-          data: {
-            recipientUsername: user,
-            senderUsername: userDetails.username,
-            message: effectiveMessage,
-            has_read: false,
-            // media: mediaPath
-          }
-        })
+          const receiver = await userRegistry.getUserByUsername(user)
+          if (!receiver) return
 
-        cb({ chat })
-
-        const receiver = await userRegistry.getUserByUsername(user)
-        if (!receiver) return
-
-        io.to(receiver.sid).emit(WebSocketMessage.CHAT, { chat })
-        io.to(receiver.sid).emit(WebSocketMessage.UNREAD_CHATS_COUNT, { user: userDetails.username, unreadChatsCount: await getUnreadMessagesBetween({ sender: userDetails.username, recipient: receiver.username }) })
+          io.to(receiver.sid).emit(WebSocketMessage.CHAT, { chat })
+          io.to(receiver.sid).emit(WebSocketMessage.UNREAD_CHATS_COUNT, { user: userDetails.username, unreadChatsCount: await getUnreadMessagesBetween({ sender: userDetails.username, recipient: receiver.username }) })
+        }
+        catch (err) {
+          logger.warn("Failed to create chat:", err)
+          // TODO: handle logic for returning error to client
+        }
       }
     )
 
