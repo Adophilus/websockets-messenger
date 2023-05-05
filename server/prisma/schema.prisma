@@ -38,16 +38,27 @@ model AwaitingUser {
   waitingUser User @relation("WaitingUser", fields: [waitingUserUsername], references: [username])
 }
 
+model Media {
+  id        Int    @id @default(autoincrement())
+  url       String
+  mimetype  String
+  size      Int
+  messageId Int
+
+  message Message @relation("MessageMedia", fields: [messageId], references: [id])
+}
+
 model Message {
   id                Int      @id @default(autoincrement())
   message           String
   senderUsername    String
   recipientUsername String
   has_read          Boolean
-  media             String?
+  mediaIds          String[]
   created_at        DateTime @default(now())
   updated_at        DateTime @updatedAt
 
-  sender    User @relation("MessageSender", fields: [senderUsername], references: [username])
-  recipient User @relation("MessageRecipient", fields: [recipientUsername], references: [username])
+  media     Media[] @relation("MessageMedia")
+  sender    User    @relation("MessageSender", fields: [senderUsername], references: [username])
+  recipient User    @relation("MessageRecipient", fields: [recipientUsername], references: [username])
 }
