@@ -39,8 +39,7 @@ model AwaitingUser {
 }
 
 model Media {
-  id        Int    @id @default(autoincrement())
-  url       String
+  url       String @id
   mimetype  String
   size      Int
   messageId Int?
@@ -54,7 +53,7 @@ model Message {
   senderUsername    String
   recipientUsername String
   has_read          Boolean
-  mediaIds          Int[]
+  mediaIds          String[]
   created_at        DateTime @default(now())
   updated_at        DateTime @updatedAt
 

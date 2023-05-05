@@ -106,7 +106,7 @@ export default (io: Namespace, parentLogger: Logger<ILogObj>) => {
 
     socket.on(
       WebSocketMessage.SEND_MESSAGE,
-      async ({ user, message, media }: { user: string; message: string, media: number[] }, cb) => {
+      async ({ user, message, media }: { user: string; message: string, media: null | number[] }, cb) => {
         const effectiveMessage = message.trimEnd()
         if (!effectiveMessage) return
 
@@ -121,7 +121,7 @@ export default (io: Namespace, parentLogger: Logger<ILogObj>) => {
               senderUsername: userDetails.username,
               message: effectiveMessage,
               has_read: false,
-              mediaIds: media
+              mediaIds: media ? media : []
             }
           })
           cb({ chat })
