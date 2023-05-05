@@ -34,7 +34,9 @@ const uploadAsync = (buffer: Buffer) => {
 
 const uploadFileAsync = (filePath: string) => {
   return new Promise<string>((resolve, reject) => {
-    storage.uploader.upload(filePath, {}, (error, res) => {
+    storage.uploader.upload(filePath, {
+      folder: config.environment.PRODUCTION ? 'production' : 'development'
+    }, (error, res) => {
       if (error) {
         reject(error)
         return
