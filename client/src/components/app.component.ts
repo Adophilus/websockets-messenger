@@ -120,17 +120,27 @@ class AppElement extends LitElement {
     `
   }
 
-  sendMessage({ message, file }: { message: string, file: File | null }) {
-    if (file) {
-      const media = []
-      console.log(file)
-      return
-      this.ws.emit(WebSocketMessage.SEND_MESSAGE, { message, user: this.recipient.username, media }, ({ chat }: { chat: Chat }) => {
+  async sendMessage({ message, files }: { message: string, files: FileList }) {
+    if (files.length === 0) {
+      this.ws.emit(WebSocketMessage.SEND_MESSAGE, { message, user: this.recipient.username }, ({ chat }: { chat: Chat }) => {
         this.messages = this.messages.concat(new Message({ id: chat.id, message: chat.message, sender: chat.senderUsername, recipient: chat.recipientUsername, has_read: chat.has_read, media: chat.mediaIds }))
       })
     }
+    else if (files.length > 4) {
+      this.errors = this.errors.concat('You can only upload up to 4 files')
+    }
     else {
-      this.ws.emit(WebSocketMessage.SEND_MESSAGE, { message, user: this.recipient.username }, ({ chat }: { chat: Chat }) => {
+      const form = new FormData()
+      for (const file of Array.from(files)) {
+        form.append('files', file)
+      }
+      const res = await fetch('/api/upload/files', {
+        method: 'POST', headers: {
+          Authorization: `Bearer ${this.token}`
+        }, body: form
+      }).then(res => res.json())
+
+      this.ws.emit(WebSocketMessage.SEND_MESSAGE, { message, user: this.recipient.username, media: res.files }, ({ chat }: { chat: Chat }) => {
         this.messages = this.messages.concat(new Message({ id: chat.id, message: chat.message, sender: chat.senderUsername, recipient: chat.recipientUsername, has_read: chat.has_read, media: chat.mediaIds }))
       })
     }

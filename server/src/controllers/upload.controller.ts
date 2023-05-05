@@ -7,7 +7,7 @@ import StorageService from '@/services/storage.service'
 async function uploadFiles(req: Request, res: Response) {
   const logger: Logger<ILogObj> = res.locals.logger
 
-  const fileIds: (number | null)[] = []
+  const fileIds: (string | null)[] = []
 
   if (req.files) {
     if (Array.isArray(req.files)) {
@@ -22,7 +22,7 @@ async function uploadFiles(req: Request, res: Response) {
             }
           })
           logger.trace(`Uploading file: ${file.path}`)
-          fileIds.push(media.id)
+          fileIds.push(media.url)
         }
         else {
           logger.warn(`Failed to upload file: ${file.path}`)

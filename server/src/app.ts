@@ -3,7 +3,6 @@ dotenv.config()
 
 import express from 'express'
 import cors from 'cors'
-import bodyParser from 'body-parser'
 import { ILogObj, Logger } from 'tslog'
 import http from 'http'
 import config from './config'
@@ -23,7 +22,7 @@ const websocketService = WebSocketService(server, logger)
 async function bootstrap() {
   // setup middleware (core)
   app.use(cors())
-  app.use(bodyParser.urlencoded({ extended: true }))
+  app.use(express.urlencoded({ extended: true }))
   app.use(express.json())
 
   // setup middleware

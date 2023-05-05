@@ -7,7 +7,7 @@ import Recipient from '../utils/Recipient'
 
 export interface ISendMessageEvent {
   message: string,
-  file: File | null
+  files: FileList
 }
 
 export interface IReadMessageEvent {
@@ -64,9 +64,13 @@ class ChatUIElement extends LitElement {
       }
         </small>
       </p>
-      <p>
-        ${map(message.media, () => html`<img class="aspect-square w-3/4 object-cover" src="${message.media}" alt="${message.media}" />`)}
-      </p>
+      ${message.media ? html`
+        <div class="mb-2">
+          <div class="grid gap-2 grid-cols-2">
+            ${map(message.media, (media) => html`<img class="aspect-square w-3/4 object-cover" src="${media}" alt="${message.media}" />`)}
+          </div>
+        </div>
+      ` : null}
       <p>${message.message}</p>
       <div class="flex justify-end">
         <small class="text-xs">${message.has_read ? '✔️' : ''}</small>
@@ -105,7 +109,7 @@ class ChatUIElement extends LitElement {
           <input type="text" id="message" required name="message" class="w-full bg-white rounded border border-gray-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 text-base outline-none text-gray-700 py-1 px-3 leading-8 transition-colors duration-200 ease-in-out">
           <button type="submit" class="text-white bg-indigo-500 border-0 py-2 px-8 focus:outline-none hover:bg-indigo-600 rounded text-lg">Send</button>
         </div>
-        <input type="file" id="fileInput" class="hidden" />
+        <input type="file" id="fileInput" multiple class="hidden" />
       </form>
     </section>
     `
@@ -114,14 +118,14 @@ class ChatUIElement extends LitElement {
   sendMessage(ev: SubmitEvent) {
     ev.preventDefault()
     const message = this.messageInput.value.trim()
-    const file = this.fileInput.files?.[0] ?? null
+    const files = this.fileInput.files
 
     if (message) {
       this.dispatchEvent(
         new CustomEvent('send-message', {
           detail: {
             message,
-            file
+            files
           }
         })
       )
