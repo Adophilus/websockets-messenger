@@ -32,7 +32,23 @@ const uploadAsync = (buffer: Buffer) => {
   })
 }
 
-export default {
+const uploadFileAsync = (filePath: string) => {
+  return new Promise<string>((resolve, reject) => {
+    storage.uploader.upload(filePath, {}, (error, res) => {
+      if (error) {
+        reject(error)
+        return
+      }
+      if (!res) {
+        reject(new Error('Upload failed!'))
+        return
+      }
+      resolve(res.url)
+    })
+  })
+}
+
+const StorageService = {
   async upload(media: Media) {
     logger.info(`uploading media: ${media.name}`)
     const buffer = Buffer.from(media.data, "base64")
@@ -50,6 +66,15 @@ export default {
       return null
     }
   },
+  async uploadFile(filePath: string) {
+    try {
+      return await uploadFileAsync(filePath)
+    }
+    catch (err) {
+      logger.warn('File upload failed!', err)
+      return null
+    }
+  },
   async remove(mediaPath: string) {
     const filePath = path.join(config.upload.path, mediaPath)
     if (await fs.stat(filePath)) {
@@ -57,3 +82,5 @@ export default {
     }
   }
 }
+
+export default StorageService
