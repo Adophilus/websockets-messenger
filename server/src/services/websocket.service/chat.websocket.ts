@@ -106,7 +106,7 @@ export default (io: Namespace, parentLogger: Logger<ILogObj>) => {
 
     socket.on(
       WebSocketMessage.SEND_MESSAGE,
-      async ({ user, message, media }: { user: string; message: string, media: null | number[] }, cb) => {
+      async ({ user, message, media }: { user: string; message: string, media: null | string[] }, cb) => {
         const effectiveMessage = message.trimEnd()
         if (!effectiveMessage) return
 
