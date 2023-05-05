@@ -12,6 +12,7 @@ import WebSocketService from './services/websocket.service'
 import DatabaseService from './services/database.service'
 import LoggerMiddleware from './middleware/logger.middleware'
 import WebSocketMiddleware from './middleware/websocket.middleware'
+import ErrorHandlerMiddleware from './middleware/error-handler.middleware'
 import router from './router'
 
 const app = express()
@@ -20,16 +21,26 @@ const logger = new Logger<ILogObj>()
 
 const websocketService = WebSocketService(server, logger)
 
-app.use(cors())
-app.use(bodyParser.urlencoded({ extended: true }))
-app.use(express.json())
-app.use(LoggerMiddleware(logger))
-app.use(WebSocketMiddleware(websocketService))
-app.use('/', router)
+async function bootstrap() {
+  // setup middleware (core)
+  app.use(cors())
+  app.use(bodyParser.urlencoded({ extended: true }))
+  app.use(express.json())
 
+  // setup middleware
+  app.use(LoggerMiddleware(logger))
+  app.use(WebSocketMiddleware(websocketService))
 
-const start = async () => {
+  // setup routes
+  app.use('/', router)
+
+  // setup error handler
+  app.use(ErrorHandlerMiddleware)
+}
+
+async function start() {
   try {
+    bootstrap()
     logger.info('Initializing database')
 
     DatabaseService.init()
