@@ -43,9 +43,9 @@ model Media {
   url       String
   mimetype  String
   size      Int
-  messageId Int
+  messageId Int?
 
-  message Message @relation("MessageMedia", fields: [messageId], references: [id])
+  message Message? @relation("MessageMedia", fields: [messageId], references: [id])
 }
 
 model Message {
