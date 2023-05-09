@@ -98,14 +98,16 @@ export default (io: Namespace, parentLogger: Logger<ILogObj>) => {
       const dbUser = await prisma.user.findFirst({ where: { username: user } })
       if (!dbUser) return
 
-      notificationsService.registerWaitingUser(user, userDetails)
-      notificationsService.notifyWaitingUser(user, userDetails, WaitingEvent.ONLINE)
+      await notificationsService.registerWaitingUser(user, userDetails)
+      if (await prisma.onlineUser.findFirst({ where: { username: user } })) {
+        await notificationsService.notifyWaitingUser(user, userDetails, WaitingEvent.ONLINE)
+      }
     })
 
     socket.on(WebSocketMessage.STOP_WAITING_FOR_USER, async ({ user }: { user: string }) => {
       const awaitedUser = await userRegistry.getUserByUsername(user)
       if (!awaitedUser) return
-      notificationsService.unregisterWaitingUser(awaitedUser.username, userDetails)
+      await notificationsService.unregisterWaitingUser(awaitedUser.username, userDetails)
     })
 
     socket.on(

@@ -197,6 +197,11 @@ class AppElement extends LitElement {
           this.ws.emit(WebSocketMessage.WAIT_FOR_USER, { user: user.username })
           return new Recipient({ username: user.username, unreadChatsCount: 0, isOnline: user.isOnline })
         })
+        users.forEach(user => {
+          this.ws.emit(WebSocketMessage.FETCH_UNREAD_CHATS_COUNT, { user: user.username }, ({ unreadChatsCount }: { unreadChatsCount: number }) => {
+            this.recipients = this.recipients.map(recipient => recipient.username === user.username ? new Recipient({ ...recipient, unreadChatsCount }) : recipient)
+          })
+        })
       })
 
       this.ws.on(WebSocketMessage.USER_JOIN, ({ user }: { user: string }) => {
@@ -242,10 +247,6 @@ class AppElement extends LitElement {
         })
         if (!hasRegisteredUser)
           this.recipients = this.recipients.concat(new Recipient({ username: user, unreadChatsCount: 0, isOnline: true }))
-
-        this.ws.emit(WebSocketMessage.FETCH_UNREAD_CHATS_COUNT, { user }, ({ unreadChatsCount }: { unreadChatsCount: number }) => {
-          this.recipients = this.recipients.map(recipient => recipient.username === user ? new Recipient({ ...recipient, unreadChatsCount }) : recipient)
-        })
       })
 
       this.ws.on(WebSocketMessage.UNREAD_CHATS_COUNT, ({ user, unreadChatsCount }: { user: string, unreadChatsCount: number }) => {
