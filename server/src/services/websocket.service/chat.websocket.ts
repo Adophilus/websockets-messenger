@@ -57,8 +57,11 @@ export default (io: Namespace, parentLogger: Logger<ILogObj>) => {
       logger.trace(`${userDetails} wishes to retrieve all users`)
 
       const dbUsers = await prisma.user.findMany()
+      const mappedUsers = dbUsers.map(dbUser => ({ username: dbUser.username }))
+      const filteredUsers = mappedUsers.filter(user => user.username !== userDetails.username)
+
       cb({
-        users: dbUsers.filter(user => user.username !== userDetails.username)
+        users: filteredUsers
       })
     })
 
