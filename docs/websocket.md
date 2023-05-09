@@ -18,15 +18,10 @@ This document outlines the procedure for sending and receiving messages from the
 
 #### [Publish] `fetch-users`
 
-- Request payload
-```typescript
-type Request = {}
-```
-
 - Response payload
 ```typescript
 type Response = {
-  users: User[] // a list of users
+  users: string[] // a list of usernames
 }
 ```
 
