@@ -88,6 +88,7 @@ export class NotificationsService {
     })
     if (!waitingUsers) return
 
+    this.logger.trace(`All waiting users are going to be alerted because ${awaitedUser} has come online`)
     for (const waitingUser of waitingUsers) {
       this.notifyWaitingUser(awaitedUser, new UserDetails({ username: waitingUser.waitingUserUsername, sid: waitingUser.sid }), event)
     }
