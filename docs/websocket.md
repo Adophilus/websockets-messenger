@@ -10,152 +10,199 @@ Channel: `chat`
 
 ## Overview
 
-This document outlines the procedure for sending and receiving messages from the websocket server
+This document outlines the procedure for sending and receiving messages from the websocket server.
 
-## Messages
+## Events
 
-### [PUB] `fetch-users`
+### Publish Events (sent by client)
+
+#### [Publish] `fetch-users`
 
 - Request payload
 ```typescript
-type TRequest = {}
+type Request = {}
 ```
 
 - Response payload
 ```typescript
-type TResponse = {
-  users: string[] // a list of usernames 
+type Response = {
+  users: User[] // a list of users
 }
 ```
 
-### [PUB] `fetch-conversation-with-user`
+#### [Publish] `fetch-conversation-with-user`
 
 - Request payload
 ```typescript
-type TRequest = {
+type Request = {
   user: string // username of user you wish to fetch conversion with
 }
 ```
 
 - Response payload
 ```typescript
-type TResponse = {
-  chats: TChat[] // a list of messages
+type Response = {
+  chats: Chat[] // a list of chats
 }
 ```
 
-### [PUB] `fetch-unread-chats-count`
+#### [Publish] `fetch-unread-chats-count`
 
 - Request payload
 ```typescript
-type TRequest = {
-  user: string // username of the recipient
+type Request = {
+  user: string // username of the sender 
 }
 ```
 
 - Response payload
 ```typescript
-type TResponse = {
+type Response = {
   unreadChatsCount: number // a number signifying the number of unread chats
 }
 ```
 
-### [PUB] `read-chat`
+#### [Publish] `read-chat`
 
 - Request payload
 ```typescript
-type TRequest = {
-  id: TIdentifier // the id of the chat that has been read
+type Request = {
+  id: ChatIdentifier // the id of the chat that has been read
 }
 ```
 
 - Response payload
 ```typescript
-type TResponse = {} // empty, but getting this response means that the server has registered the `read` status of the chat 
+type Response = {} // empty, but getting this response means that the server has registered the `read` status of the chat 
 ```
 
-### [PUB] `send-chat`
+#### [Publish] `send-message`
 
 - Request payload
 ```typescript
-type TRequest = {
-  message: string // the chat message
+type Request = {
+  message: string, // the chat message
+  user: string, // the username of the correspondent in the conversation
+  media?: MediaIdentifier[] // the ids of the media you want to be associated with this chat
 }
 ```
 
 - Response payload
 ```typescript
-type TResponse = {
-  chat: TChat
+type Response = {
+  chat: Chat
 }
 ```
 
-### [SUB] `unread-chats-count`
+#### [Publish] `wait-for-user`
+
+- Request payload
+```typescript
+type Request = {
+  user: string // the username of the user to be awaited
+}
+```
+
+#### [Publish] `stop-waiting-for-user`
+
+- Request payload
+```typescript
+type Request = {
+  user: string // the username of the user who is no longer to be awaited
+}
+```
+
+### Subscribe Events (sent by server)
+
+#### [Subscribe] `unread-chats-count`
 
 - Response payload
 ```typescript
-type TResponse = {
+type Response = {
   unreadChatsCount: number, // a number signifying the number of unread chats
   user: string // the username of the correspondent in the conversation
 }
 ```
 
-### [SUB] `read-chat`
+#### [Subscribe] `read-chat`
 
 - Response payload
 ```typescript
-type TResponse = {
-  id: TIdentifier, // the id of the chat that has been read
+type Response = {
+  id: ChatIdentifier, // the id of the chat that has been read
   user: string // the username of the correspondent in the conversation
 }
 ```
 
-### [SUB] `chat`
+#### [Subscribe] `chat`
 
 - Response payload
 ```typescript
-type TResponse = {
-  chat: TChat // chat sent by correspondent
+type Response = {
+  chat: Chat // chat sent by correspondent
 }
 ```
 
-### [SUB] `user-join`
+#### [Subscribe] `user-join`
 
 - Response payload
 ```typescript
-type TResponse = {
+type Response = {
   user: string // the username of the user that just joined
 }
 ```
 
-### [SUB] `user-leave`
+#### [Subscribe] `user-leave`
 
 - Response payload
 ```typescript
-type TResponse = {
+type Response = {
   user: string // the username of the user that just left
 }
 ```
 
+#### [Subscribe] `user-online`
+
+- Response payload
+```typescript
+type Response = {
+  user: string // the username of the user that just came online 
+}
+```
+
+#### [Subscribe] `user-offline`
+
+- Response payload
+```typescript
+type Response = {
+  user: string // the username of the user that just came offline 
+}
+```
+
+#### [Subscribe] `auth-failed`
+Indicates that authentication to the server failed
+
+
 ## Schema
 ```typescript
-type TIdentifier = string | number // the unique id of an entity
+type ChatIdentifier = string | number // the unique id of a chat
+type MediaIdentifier = string // the unique id of a media resoure (the media URL)
 ```
 
 ```typescript
-type TUser = {
+type User = {
   username: string
+  isOnline: boolean
 }
 ```
 
 ```typescript
-type TChat = {
-  id: TIdentifier,
+type Chat = {
+  id: ChatIdentifier,
   sender: string, // username of the sender
   recipient: string, // username of the recipient
   message: string, // message sent
   has_read: boolean, // flag signifying whether the chat has been read by the recepient
-  media: string | null, // url of the media
-  date_sent: Date
+  media?: MediaIdentifier[] // list of media ids
 }
 ```

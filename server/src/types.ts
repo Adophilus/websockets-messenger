@@ -31,7 +31,7 @@ export enum UserPolicy {
 
 export enum WebSocketMessage {
   FETCH_USERS = "fetch-users",
-  FETCH_CONVERSATION_WITH_USER = "fetch-chats-with-user",
+  FETCH_CONVERSATION_WITH_USER = "fetch-conversation-with-user",
   FETCH_UNREAD_CHATS_COUNT = "fetch-unread-chats-count",
   UNREAD_CHATS_COUNT = "unread-chats-count",
   READ_CHAT = "read-chat",
@@ -41,7 +41,7 @@ export enum WebSocketMessage {
   USER_JOIN = "user-join",
   USER_LEAVE = "user-leave",
   AUTH_FAILED = "auth-failed",
-  UPLOAD_MEDIA = "upload-media",
+  // UPLOAD_MEDIA = "upload-media",
   WAIT_FOR_USER = "wait-for-user",
   STOP_WAITING_FOR_USER = "stop-waiting-for-user",
   USER_ONLINE = "user-online",
