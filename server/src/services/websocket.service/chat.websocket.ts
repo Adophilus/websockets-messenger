@@ -72,8 +72,9 @@ export default (io: Namespace, parentLogger: Logger<ILogObj>) => {
       cb({ unreadChatsCount })
     })
 
-    socket.on(WebSocketMessage.FETCH_CONVERSATION_WITH_USER, async ({ user }: { user: string }, cb) => {
-      const conversationLength = 50 // TODO: implement logic for getting last ${conversationLength} conversations
+    socket.on(WebSocketMessage.FETCH_CONVERSATION_WITH_USER, async ({ user, limit, after, before }: { user: string, limit: number, after?: number, before?: number }, cb) => {
+      const conversationLength = limit > 0 && limit <= 100 ? limit : 50
+      // TODO: implement filtering based on the after and before params
 
       logger.trace(`${userDetails} wishes to retrieve last ${conversationLength} conversation with ${user}`)
 
@@ -84,7 +85,7 @@ export default (io: Namespace, parentLogger: Logger<ILogObj>) => {
             { AND: [{ senderUsername: user }, { recipientUsername: userDetails.username }] }
           ]
         },
-        take: 50,
+        take: conversationLength,
         orderBy: {
           created_at: 'desc'
         }
